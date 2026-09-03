@@ -14,5 +14,7 @@ services:
         generateValue: true
       - key: DB_CONNECTION
         value: sqlite
+      - key: CACHE_STORE
+        value: file
       - key: LOG_CHANNEL
         value: stderr

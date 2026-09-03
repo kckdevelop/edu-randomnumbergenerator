@@ -15,6 +15,7 @@ Saat melakukan deploy di platform cloud (Render, Railway, Vercel, dll.), tambahk
 | `APP_KEY` | `base64:xxx...` | Dihasilkan via `php artisan key:generate --show` |
 | `APP_URL` | `https://nama-app.onrender.com` | URL domain publik aplikasi |
 | `DB_CONNECTION` | `sqlite` atau `pgsql` / `mysql` | Tipe database yang digunakan |
+| `CACHE_STORE` | `file` | Wajib `file` saat migrasi awal agar tidak terjadi error `cache_locks` missing |
 | `DATABASE_URL` | `postgres://user:pass@host:5432/db` | (Opsional) Jika memakai PostgreSQL/MySQL dari cloud provider |
 | `LOG_CHANNEL` | `stderr` | Mengarahkan log Laravel ke dashboard platform |
 
