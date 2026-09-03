@@ -533,6 +533,97 @@
 <div id="zeus-flash-overlay"></div>
 
 <!-- ============================================================
+     DEPOSIT MODAL (Max Rp 500.000)
+     ============================================================ -->
+<div id="deposit-modal-backdrop" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] hidden items-center justify-center p-4">
+    <div class="max-w-md w-full glass-card rounded-3xl gold-border overflow-hidden shadow-2xl relative">
+        <!-- Header -->
+        <div class="p-5 bg-gradient-to-r from-emerald-950 to-indigo-950 border-b border-emerald-500/30 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-xl">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                    <h3 class="font-display font-black text-lg text-white">DEPOSIT SALDO VIRTUAL</h3>
+                    <p class="text-xs text-emerald-300 font-semibold">Maksimal Rp 500.000 per pengajuan</p>
+                </div>
+            </div>
+            <button onclick="closeDepositModal()" class="text-indigo-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-5">
+            <!-- Preset Buttons -->
+            <div>
+                <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2">Pilih Nominal Deposit Preset:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach([50000, 100000, 200000, 500000] as $preset)
+                    <button type="button" onclick="setDepositPreset({{ $preset }})"
+                        class="py-2.5 px-3 rounded-xl border border-emerald-800/80 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 text-xs font-bold transition flex items-center justify-between">
+                        <span>Rp {{ number_format($preset, 0, ',', '.') }}</span>
+                        @if($preset === 500000)
+                            <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-black">MAX</span>
+                        @endif
+                    </button>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Nominal Input -->
+            <div>
+                <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1.5">Nominal Pengajuan Deposit (Rp):</label>
+                <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-amber-400 text-sm">Rp</span>
+                    <input type="number" id="deposit-amount-input" value="100000" min="10000" max="500000" step="50000"
+                        class="w-full bg-indigo-950 border border-indigo-800 text-amber-400 font-bold text-lg rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-amber-400">
+                </div>
+                <p class="text-[11px] text-indigo-400 mt-1">Minimal: Rp 10.000 | Maksimal: Rp 500.000</p>
+            </div>
+
+            <!-- Notice message -->
+            <div class="bg-indigo-950/60 border border-indigo-800/60 p-3 rounded-xl flex items-start gap-2.5 text-xs text-indigo-200">
+                <i class="fa-solid fa-circle-info text-amber-400 text-base shrink-0 mt-0.5"></i>
+                <span>Pengajuan deposit memerlukan <b>ACC / Persetujuan Admin Bandar</b> sebelum saldo ditambahkan ke akun Anda.</span>
+            </div>
+
+            <!-- Submit Button -->
+            <button onclick="submitDepositRequest()" id="btn-submit-deposit"
+                class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-gray-950 font-display font-black text-base tracking-wider shadow-lg shadow-emerald-500/30 transition transform active:scale-95 flex items-center justify-center gap-2 border border-emerald-300">
+                <i class="fa-solid fa-paper-plane" id="deposit-submit-icon"></i>
+                <span id="deposit-submit-text">KIRIM PERMINTAAN DEPOSIT</span>
+            </button>
+
+            <!-- Recent Deposit History List -->
+            <div class="pt-4 border-t border-indigo-900/60">
+                <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Riwayat Deposit Anda
+                </h4>
+                <div class="max-h-36 overflow-y-auto space-y-1.5 text-xs" id="deposit-history-list">
+                    @forelse($recentDeposits as $dep)
+                    <div class="p-2 rounded-lg bg-indigo-950/80 border border-indigo-900 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-amber-400">Rp {{ number_format($dep->amount, 0, ',', '.') }}</span>
+                            <span class="text-[10px] text-indigo-400 ml-2 font-mono">{{ $dep->created_at->format('H:i:s - d M') }}</span>
+                        </div>
+                        @if($dep->status === 'pending')
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950 border border-amber-500/50 text-amber-300">MENUNGGU ACC</span>
+                        @elseif($dep->status === 'approved')
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 border border-emerald-500/50 text-emerald-300">DI-ACC (BERHASIL)</span>
+                        @else
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-950 border border-red-500/50 text-red-300">DITOLAK</span>
+                        @endif
+                    </div>
+                    @empty
+                    <p class="text-[11px] text-indigo-400 text-center py-2">Belum ada riwayat deposit.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
      WIN POPUP MODAL (Jackpot & Low-Win)
      ============================================================ -->
 <div id="win-popup-backdrop">
@@ -615,16 +706,23 @@
             </div>
         </div>
 
-        <div class="flex items-center space-x-3 bg-indigo-950/80 border border-amber-500/30 px-5 py-2.5 rounded-xl shadow-lg">
-            <div class="text-right">
-                <p class="text-[11px] font-semibold text-indigo-300 uppercase tracking-wider">Saldo Virtual Siswa</p>
-                <p id="player-balance" class="font-display font-black text-2xl text-amber-400">
-                    Rp {{ number_format($user->balance, 0, ',', '.') }}
-                </p>
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 bg-indigo-950/80 border border-amber-500/30 px-5 py-2.5 rounded-xl shadow-lg">
+                <div class="text-right">
+                    <p class="text-[11px] font-semibold text-indigo-300 uppercase tracking-wider">Saldo Virtual Siswa</p>
+                    <p id="player-balance" class="font-display font-black text-2xl text-amber-400">
+                        Rp {{ number_format($user->balance, 0, ',', '.') }}
+                    </p>
+                </div>
+                <div class="text-2xl text-amber-400">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
             </div>
-            <div class="text-2xl text-amber-400">
-                <i class="fa-solid fa-coins"></i>
-            </div>
+
+            <button onclick="openDepositModal()" class="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-gray-950 font-display font-black text-xs tracking-wider shadow-lg shadow-emerald-500/20 transition transform active:scale-95 flex items-center gap-2 border border-emerald-300">
+                <i class="fa-solid fa-plus-circle text-base"></i>
+                <span>DEPOSIT</span>
+            </button>
         </div>
     </div>
 
@@ -686,10 +784,15 @@
                 </div>
             </div>
 
-            <!-- Big Golden Spin Button -->
-            <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+            <!-- Golden Spin & Auto Spin Buttons -->
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto justify-end">
+                <button id="auto-spin-btn" onclick="toggleAutoSpin()"
+                    class="w-full sm:w-48 py-4 px-4 rounded-2xl bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-display font-bold text-base tracking-wider shadow-lg shadow-purple-900/40 transition transform active:scale-95 flex items-center justify-center gap-2 border border-purple-400/40">
+                    <i class="fa-solid fa-repeat text-lg" id="auto-spin-icon"></i>
+                    <span id="auto-spin-text">AUTO SPIN 10X</span>
+                </button>
                 <button id="spin-btn" onclick="executeSpin()"
-                    class="w-full md:w-64 py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-gray-950 font-display font-black text-xl tracking-wider shadow-2xl shadow-amber-500/30 transition transform active:scale-95 flex items-center justify-center gap-3 border-2 border-amber-300">
+                    class="w-full sm:w-56 py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-gray-950 font-display font-black text-xl tracking-wider shadow-2xl shadow-amber-500/30 transition transform active:scale-95 flex items-center justify-center gap-3 border-2 border-amber-300">
                     <i class="fa-solid fa-rotate text-2xl" id="spin-icon"></i>
                     <span id="spin-text">PUTAR (SPIN)</span>
                 </button>
@@ -773,38 +876,157 @@
 @push('scripts')
 <script>
     let isSpinning = false;
+    let isAutoSpinning = false;
+    let stopAutoSpinRequested = false;
+    let currentBalance = {{ (float) $user->balance }};
     const availableSymbols = ['⚡', '👑', '💍', '⏳', '💎', '💚', '💙'];
     const symbolLabels   = { '⚡': 'PETIR', '👑': 'MAHKOTA', '💍': 'CINCIN', '⏳': 'JAM PASIR', '💎': 'PERMATA', '💚': 'GIOK', '💙': 'SAFIR' };
 
-    // ─── Teleport popup & toast to <body> so position:fixed is always relative to viewport ───
+    // ─── Teleport popup, toast & deposit modal to <body> so position:fixed is always relative to viewport ───
     document.addEventListener('DOMContentLoaded', () => {
         const backdrop = document.getElementById('win-popup-backdrop');
         const toast    = document.getElementById('small-win-toast');
+        const depModal = document.getElementById('deposit-modal-backdrop');
         if (backdrop) document.body.appendChild(backdrop);
         if (toast)    document.body.appendChild(toast);
+        if (depModal) document.body.appendChild(depModal);
     });
 
     // Close popup with ESC key
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeWinPopup();
+        if (e.key === 'Escape') {
+            closeWinPopup();
+            closeDepositModal();
+        }
     });
+
+    // ─── Deposit Modal Handlers ──────────────────────────────────────────────────
+
+    function openDepositModal() {
+        const modal = document.getElementById('deposit-modal-backdrop');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function closeDepositModal() {
+        const modal = document.getElementById('deposit-modal-backdrop');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    function setDepositPreset(amount) {
+        document.getElementById('deposit-amount-input').value = amount;
+    }
+
+    function submitDepositRequest() {
+        const amount = parseFloat(document.getElementById('deposit-amount-input').value);
+        if (!amount || amount < 10000) {
+            alert('Nominal deposit minimal adalah Rp 10.000!');
+            return;
+        }
+        if (amount > 500000) {
+            alert('Nominal deposit maksimal adalah Rp 500.000!');
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-deposit');
+        const icon = document.getElementById('deposit-submit-icon');
+        const text = document.getElementById('deposit-submit-text');
+
+        btn.disabled = true;
+        icon.className = 'fa-solid fa-spinner fa-spin';
+        text.innerText = 'MENGIRIM...';
+
+        fetch("{{ route('player.deposit') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ amount: amount })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                fetchUserDeposits();
+            } else {
+                alert(data.message || 'Gagal mengirim deposit.');
+            }
+        })
+        .catch(err => {
+            alert(err.message || 'Terjadi kesalahan.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            icon.className = 'fa-solid fa-paper-plane';
+            text.innerText = 'KIRIM PERMINTAAN DEPOSIT';
+        });
+    }
+
+    function fetchUserDeposits() {
+        fetch("{{ route('player.user-deposits') }}", {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const list = document.getElementById('deposit-history-list');
+                if (data.deposits.length === 0) {
+                    list.innerHTML = '<p class="text-[11px] text-indigo-400 text-center py-2">Belum ada riwayat deposit.</p>';
+                } else {
+                    let html = '';
+                    data.deposits.forEach(d => {
+                        let badge = '';
+                        if (d.status === 'pending') {
+                            badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950 border border-amber-500/50 text-amber-300">MENUNGGU ACC</span>';
+                        } else if (d.status === 'approved') {
+                            badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 border border-emerald-500/50 text-emerald-300">DI-ACC (BERHASIL)</span>';
+                        } else {
+                            badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-950 border border-red-500/50 text-red-300">DITOLAK</span>';
+                        }
+                        html += `
+                            <div class="p-2 rounded-lg bg-indigo-950/80 border border-indigo-900 flex items-center justify-between">
+                                <div>
+                                    <span class="font-bold text-amber-400">Rp ${d.amount_formatted}</span>
+                                    <span class="text-[10px] text-indigo-400 ml-2 font-mono">${d.created_at}</span>
+                                </div>
+                                ${badge}
+                            </div>
+                        `;
+                    });
+                    list.innerHTML = html;
+                }
+            }
+        });
+    }
 
     // ─── Utility ────────────────────────────────────────────────────────────────
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
     function setBet(amount) {
-        if (isSpinning) return;
+        if (isSpinning || isAutoSpinning) return;
         document.getElementById('bet-input').value = amount;
     }
 
     // ─── Spin Entry Point ───────────────────────────────────────────────────────
 
-    async function executeSpin() {
-        if (isSpinning) return;
+    async function executeSpin(isAuto = false) {
+        if (isSpinning) return false;
 
         const betAmount = parseFloat(document.getElementById('bet-input').value);
-        if (!betAmount || betAmount < 1000) { alert('Nominal taruhan minimal adalah Rp 1.000!'); return; }
+        if (!betAmount || betAmount < 1000) { alert('Nominal taruhan minimal adalah Rp 1.000!'); return false; }
+
+        if (currentBalance < betAmount) {
+            alert('Saldo virtual Anda tidak mencukupi untuk melakukan bet ini!');
+            return false;
+        }
 
         isSpinning = true;
         resetUI();
@@ -818,9 +1040,9 @@
             data = await fetchSpin(betAmount);
         } catch(err) {
             stopReelRolling(spinIntervals);
-            alert(err.message || 'Terjadi kesalahan pada server.');
+            alert(err.message || err.error || 'Terjadi kesalahan pada server.');
             unlockUI();
-            return;
+            return false;
         }
 
         // Phase 3: Wait minimum 2s of rolling animation
@@ -833,7 +1055,7 @@
         // Phase 5: Post-land effects based on result
         if (data.status_manipulasi === 'lose') {
             await playLoseSequence();
-        } else if (data.status_manipulasi === 'win') {
+        } else if (data.status_manipulasi.includes('win') || data.status_manipulasi === 'win') {
             await playJackpotSequence(data);
         } else {
             await playLowWinSequence(data);
@@ -841,12 +1063,77 @@
 
         // Phase 6: Update balance & render result card
         updateBalance(data.new_balance);
-        // For win/lowwin, popup/toast already shows — only show bottom card for lose
-        if (data.status_manipulasi === 'lose') {
-            renderResultCard(data);
-        }
+        renderResultCard(data);
         addHistoryRow(data);
+
+        // Jika auto spin dan menang jackpot, auto close popup setelah 1.5 detik agar loop berjalan terus
+        if (isAuto && (data.status_manipulasi === 'win' || data.status_manipulasi.includes('win'))) {
+            await sleep(1500);
+            closeWinPopup();
+        }
+
         unlockUI();
+        return true;
+    }
+
+    // ─── Auto Spin 10x Handler ──────────────────────────────────────────────────
+
+    async function toggleAutoSpin() {
+        if (isAutoSpinning) {
+            stopAutoSpinRequested = true;
+            document.getElementById('auto-spin-text').innerText = 'MENGHENTIKAN...';
+            return;
+        }
+
+        const betAmount = parseFloat(document.getElementById('bet-input').value);
+        if (!betAmount || betAmount < 1000) {
+            alert('Nominal taruhan minimal adalah Rp 1.000!');
+            return;
+        }
+
+        if (currentBalance < betAmount) {
+            alert('Saldo virtual Anda tidak mencukupi untuk melakukan Auto Spin!');
+            return;
+        }
+
+        isAutoSpinning = true;
+        stopAutoSpinRequested = false;
+
+        const autoBtn = document.getElementById('auto-spin-btn');
+        const autoIcon = document.getElementById('auto-spin-icon');
+        const autoText = document.getElementById('auto-spin-text');
+
+        autoBtn.className = 'w-full sm:w-48 py-4 px-4 rounded-2xl bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-display font-bold text-base tracking-wider shadow-lg shadow-red-900/40 transition transform active:scale-95 flex items-center justify-center gap-2 border border-red-400/40';
+        autoIcon.className = 'fa-solid fa-square text-lg animate-pulse';
+
+        for (let i = 1; i <= 10; i++) {
+            if (stopAutoSpinRequested) {
+                break;
+            }
+
+            if (currentBalance < betAmount) {
+                alert('Auto Spin dihentikan! Saldo virtual Anda tidak mencukupi untuk melanjutkan taruhan.');
+                break;
+            }
+
+            autoText.innerText = `STOP AUTO (${i}/10)`;
+
+            const success = await executeSpin(true);
+            if (!success) {
+                break;
+            }
+
+            if (i < 10 && !stopAutoSpinRequested) {
+                await sleep(500);
+            }
+        }
+
+        // Reset auto spin UI state
+        isAutoSpinning = false;
+        stopAutoSpinRequested = false;
+        autoBtn.className = 'w-full sm:w-48 py-4 px-4 rounded-2xl bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-display font-bold text-base tracking-wider shadow-lg shadow-purple-900/40 transition transform active:scale-95 flex items-center justify-center gap-2 border border-purple-400/40';
+        autoIcon.className = 'fa-solid fa-repeat text-lg';
+        autoText.innerText = 'AUTO SPIN 10X';
     }
 
     // ─── API Call ────────────────────────────────────────────────────────────────
@@ -1300,7 +1587,8 @@
     }
 
     function updateBalance(newBalance) {
-        const fmt = 'Rp ' + new Intl.NumberFormat('id-ID').format(newBalance);
+        currentBalance = parseFloat(newBalance);
+        const fmt = 'Rp ' + new Intl.NumberFormat('id-ID').format(currentBalance);
         document.getElementById('player-balance').innerText = fmt;
         const nav = document.getElementById('nav-user-balance');
         if (nav) nav.innerText = fmt;

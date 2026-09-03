@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(SpinLog::class, 'user_id');
     }
+
+    public function depositRequests(): HasMany
+    {
+        return $this->hasMany(DepositRequest::class, 'user_id');
+    }
 }
