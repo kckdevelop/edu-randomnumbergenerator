@@ -720,21 +720,13 @@
                 </div>
             </div>
 
-            <!-- Jatah Spin Gratis Card -->
-            <div class="flex items-center space-x-3 bg-gradient-to-r from-purple-950/90 to-indigo-950/90 border border-purple-500/50 px-4 py-2 rounded-xl shadow-lg relative">
-                <div class="text-right">
-                    <p class="text-[10px] font-semibold text-purple-300 uppercase tracking-wider flex items-center justify-end gap-1">
-                        <i class="fa-solid fa-gift text-purple-400"></i> Spin Gratis
-                    </p>
-                    <p id="player-free-spins" class="font-display font-black text-xl text-purple-300">
-                        {{ (int) $user->free_spins }}x
-                    </p>
+            <!-- Indikator Mode Spin Gratis -->
+            <div id="free-spin-mode-indicator" class="hidden items-center space-x-2 bg-gradient-to-r from-fuchsia-950/90 to-purple-950/90 border border-fuchsia-400/60 px-4 py-2 rounded-xl shadow-lg animate-pulse">
+                <i class="fa-solid fa-gift text-amber-300"></i>
+                <div>
+                    <p class="text-[10px] font-semibold text-fuchsia-300 uppercase tracking-wider">Mode Aktif</p>
+                    <p class="font-display font-black text-sm text-fuchsia-200">SPIN GRATIS</p>
                 </div>
-                <button type="button" onclick="claimFreeSpins()" id="btn-claim-free-spins" title="Klaim Bonus 5 Spin Gratis"
-                    class="px-2 py-1 bg-purple-700/80 hover:bg-purple-600 text-purple-100 rounded-lg text-[10px] font-bold border border-purple-400/50 transition active:scale-95 flex items-center gap-1 shadow">
-                    <i class="fa-solid fa-plus text-amber-300"></i>
-                    <span>KLAIM</span>
-                </button>
             </div>
 
             <!-- Tombol Deposit -->
@@ -750,27 +742,6 @@
 
         <!-- Jackpot Banner (appears on win) -->
         <div id="jackpot-banner">⚡ ZEUS JACKPOT! ⚡</div>
-
-        <!-- Fitur Buy Free Spin Banner (Gates of Olympus Style) -->
-        <div class="mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/90 via-indigo-950/80 to-purple-950/90 border border-purple-500/40 shadow-xl">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-purple-600 flex items-center justify-center text-xl shadow-md text-white shrink-0">
-                    <i class="fa-solid fa-bolt text-amber-300"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h4 class="font-display font-black text-sm text-white uppercase tracking-wider">FITUR BELI SPIN GRATIS (BUY FREE SPIN)</h4>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-gray-950 shadow">100x BET</span>
-                    </div>
-                    <p class="text-xs text-indigo-300">Dapatkan langsung 10x Spin Gratis tanpa perlu menunggu Scatter jatuh!</p>
-                </div>
-            </div>
-            <button id="buy-spin-btn" onclick="buyFreeSpins()"
-                class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-gray-950 font-display font-black text-xs tracking-wider shadow-lg shadow-amber-500/30 transition transform active:scale-95 flex items-center justify-center gap-2 border-2 border-amber-300">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span id="buy-spin-text">BELI 10 FREE SPIN</span>
-            </button>
-        </div>
 
         <!-- Slot Grid Title Header -->
         <div class="flex items-center justify-between mb-4 pb-3 border-t border-indigo-900/60 pt-3 mt-2">
@@ -826,11 +797,11 @@
 
             <!-- Spin Control Action Buttons -->
             <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto justify-end">
-                <!-- Tombol Putar Gratis (Free Spin) -->
-                <button id="free-spin-btn" onclick="executeFreeSpin()"
-                    class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-700 hover:from-fuchsia-500 hover:to-purple-500 text-white font-display font-bold text-sm sm:text-base tracking-wider shadow-lg shadow-purple-900/50 transition transform active:scale-95 flex items-center justify-center gap-2 border-2 border-fuchsia-400 relative overflow-visible">
-                    <i class="fa-solid fa-gift text-lg text-amber-300 animate-bounce" id="free-spin-icon"></i>
-                    <span id="free-spin-text">SPIN GRATIS ({{ (int) $user->free_spins }})</span>
+                <!-- Toggle Mode Spin Gratis -->
+                <button id="free-spin-btn" onclick="toggleFreeSpinMode()"
+                    class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 hover:from-fuchsia-800 hover:to-purple-800 text-purple-200 font-display font-bold text-sm sm:text-base tracking-wider shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2 border border-purple-500/50">
+                    <i class="fa-solid fa-gift text-lg text-amber-300" id="free-spin-icon"></i>
+                    <span id="free-spin-text">SPIN GRATIS: OFF</span>
                 </button>
 
                 <!-- Tombol Auto Spin -->
@@ -936,114 +907,35 @@
     let isSpinning = false;
     let isAutoSpinning = false;
     let stopAutoSpinRequested = false;
+    let isFreeSpinMode = false; // Toggle mode spin gratis (tidak memotong saldo)
     let currentBalance = {{ (float) $user->balance }};
-    let currentFreeSpins = {{ (int) $user->free_spins }};
     const availableSymbols = ['⚡', '👑', '💍', '⏳', '💎', '💚', '💙'];
     const symbolLabels   = { '⚡': 'PETIR', '👑': 'MAHKOTA', '💍': 'CINCIN', '⏳': 'JAM PASIR', '💎': 'PERMATA', '💚': 'GIOK', '💙': 'SAFIR' };
 
-    function updateFreeSpins(count) {
-        currentFreeSpins = parseInt(count);
-        const counter = document.getElementById('player-free-spins');
-        if (counter) counter.innerText = `${currentFreeSpins}x`;
-        const btnText = document.getElementById('free-spin-text');
-        const btnIcon = document.getElementById('free-spin-icon');
-        const freeBtn = document.getElementById('free-spin-btn');
-        if (btnText) {
-            if (currentFreeSpins > 0) {
-                btnText.innerText = `SPIN GRATIS (${currentFreeSpins})`;
-                if (btnIcon) btnIcon.className = 'fa-solid fa-gift text-lg text-amber-300 animate-bounce';
-                if (freeBtn) freeBtn.className = 'w-full sm:w-auto px-5 py-4 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-700 hover:from-fuchsia-500 hover:to-purple-500 text-white font-display font-bold text-sm sm:text-base tracking-wider shadow-lg shadow-purple-900/50 transition transform active:scale-95 flex items-center justify-center gap-2 border-2 border-fuchsia-400 relative overflow-visible';
-            } else {
-                btnText.innerText = `KLAIM GRATIS (+5)`;
-                if (btnIcon) btnIcon.className = 'fa-solid fa-plus-circle text-lg text-amber-300';
-                if (freeBtn) freeBtn.className = 'w-full sm:w-auto px-5 py-4 rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 hover:from-purple-800 hover:to-indigo-800 text-purple-200 font-display font-bold text-sm sm:text-base tracking-wider shadow-md transition transform active:scale-95 flex items-center justify-center gap-2 border border-purple-500/50 relative overflow-visible';
-            }
-        }
-    }
-
-    function claimFreeSpins() {
-        const claimBtn = document.getElementById('btn-claim-free-spins');
-        if (claimBtn) claimBtn.disabled = true;
-
-        fetch("{{ route('player.claim-free-spins') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                updateFreeSpins(data.free_spins);
-                alert(data.message);
-            } else {
-                alert(data.message || 'Gagal mengklaim spin gratis.');
-            }
-        })
-        .catch(err => {
-            alert(err.message || 'Terjadi kesalahan jaringan.');
-        })
-        .finally(() => {
-            if (claimBtn) claimBtn.disabled = false;
-        });
-    }
-
-    function buyFreeSpins() {
+    /**
+     * Toggle mode spin gratis ON/OFF.
+     * Saat ON, spin berikutnya tidak memotong saldo player.
+     */
+    function toggleFreeSpinMode() {
         if (isSpinning || isAutoSpinning) return;
-        const betAmount = parseFloat(document.getElementById('bet-input').value);
-        if (!betAmount || betAmount < 1000) {
-            alert('Nominal bet minimal Rp 1.000!');
-            return;
+        isFreeSpinMode = !isFreeSpinMode;
+
+        const btn      = document.getElementById('free-spin-btn');
+        const btnText  = document.getElementById('free-spin-text');
+        const btnIcon  = document.getElementById('free-spin-icon');
+        const indicator = document.getElementById('free-spin-mode-indicator');
+
+        if (isFreeSpinMode) {
+            btnText.innerText   = 'SPIN GRATIS: ON';
+            btnIcon.className   = 'fa-solid fa-gift text-lg text-amber-300 animate-bounce';
+            btn.className       = 'w-full sm:w-auto px-5 py-4 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-700 text-white font-display font-bold text-sm sm:text-base tracking-wider shadow-lg shadow-purple-900/50 transition transform active:scale-95 flex items-center justify-center gap-2 border-2 border-fuchsia-400';
+            if (indicator) { indicator.classList.remove('hidden'); indicator.classList.add('flex'); }
+        } else {
+            btnText.innerText   = 'SPIN GRATIS: OFF';
+            btnIcon.className   = 'fa-solid fa-gift text-lg text-amber-300';
+            btn.className       = 'w-full sm:w-auto px-5 py-4 rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 hover:from-fuchsia-800 hover:to-purple-800 text-purple-200 font-display font-bold text-sm sm:text-base tracking-wider shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2 border border-purple-500/50';
+            if (indicator) { indicator.classList.add('hidden'); indicator.classList.remove('flex'); }
         }
-        const cost = betAmount * 100;
-        const costFmt = 'Rp ' + new Intl.NumberFormat('id-ID').format(cost);
-
-        if (!confirm(`Konfirmasi Beli Fitur Spin Gratis:\n\nHarga: ${costFmt} (100x Bet Rp ${new Intl.NumberFormat('id-ID').format(betAmount)})\nBonus: Langsung mendapatkan 10 Putaran Gratis!\n\nLanjutkan pembelian?`)) {
-            return;
-        }
-
-        const buyBtn = document.getElementById('buy-spin-btn');
-        const buyText = document.getElementById('buy-spin-text');
-        buyBtn.disabled = true;
-        buyText.innerText = 'MEMPROSES...';
-
-        fetch("{{ route('player.buy-free-spins') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ bet_amount: betAmount })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                updateBalance(data.new_balance);
-                updateFreeSpins(data.free_spins);
-                alert(data.message);
-            } else {
-                alert(data.message || 'Gagal membeli fitur spin gratis.');
-            }
-        })
-        .catch(err => {
-            alert(err.message || 'Terjadi kesalahan.');
-        })
-        .finally(() => {
-            buyBtn.disabled = false;
-            buyText.innerText = 'BELI 10 FREE SPIN';
-        });
-    }
-
-    async function executeFreeSpin() {
-        if (isSpinning) return;
-        if (currentFreeSpins <= 0) {
-            claimFreeSpins();
-            return;
-        }
-        await executeSpin(false, true);
     }
 
     // ─── Teleport popup, toast & deposit modal to <body> so position:fixed is always relative to viewport ───
@@ -1181,26 +1073,22 @@
 
     // ─── Spin Entry Point ───────────────────────────────────────────────────────
 
-    async function executeSpin(isAuto = false, isFreeSpin = false) {
+    async function executeSpin(isAuto = false) {
         if (isSpinning) return false;
 
         const betAmount = parseFloat(document.getElementById('bet-input').value);
         if (!betAmount || betAmount < 1000) { alert('Nominal taruhan minimal adalah Rp 1.000!'); return false; }
 
-        if (isFreeSpin) {
-            if (currentFreeSpins <= 0) {
-                alert('Jatah Spin Gratis Anda telah habis! Silakan klaim bonus spin gratis atau gunakan putaran reguler.');
-                return false;
-            }
-        } else {
-            if (currentBalance < betAmount) {
-                alert('Saldo virtual Anda tidak mencukupi untuk melakukan bet ini!');
-                return false;
-            }
+        const isFreeSpin = isFreeSpinMode; // Gunakan toggle mode saat ini
+
+        if (!isFreeSpin && currentBalance < betAmount) {
+            alert('Saldo virtual Anda tidak mencukupi untuk melakukan bet ini!');
+            return false;
         }
 
         isSpinning = true;
         resetUI(isFreeSpin);
+
 
         // Phase 1: Start reel rolling
         const spinIntervals = startReelRolling(isFreeSpin);
@@ -1232,19 +1120,10 @@
             await playLowWinSequence(data);
         }
 
-        // Phase 6: Update balance, free spins & render result card
+        // Phase 6: Update balance & render result card
         updateBalance(data.new_balance);
-        if (data.free_spins_left !== undefined) {
-            updateFreeSpins(data.free_spins_left);
-        }
         renderResultCard(data);
         addHistoryRow(data);
-
-        // Scatter Bonus Trigger Notification
-        if (data.awarded_free_spins && data.awarded_free_spins > 0) {
-            await sleep(400);
-            alert(`⚡ SCATTER TRIGGER! Selamat, Anda mendapatkan +${data.awarded_free_spins} Spin Gratis tambahan!`);
-        }
 
         // Jika auto spin dan menang jackpot, auto close popup setelah 1.5 detik agar loop berjalan terus
         if (isAuto && (data.status_manipulasi === 'win' || data.status_manipulasi.includes('win'))) {
@@ -1749,16 +1628,15 @@
             spinBtn.classList.add('opacity-75', 'cursor-not-allowed');
             spinIcon.classList.add('fa-spin');
             if (!isFreeSpin) spinText.innerText = 'MEMUTAR REEL...';
+            else spinText.innerText = 'PUTAR GRATIS...';
         }
 
         if (freeBtn) {
             freeBtn.disabled = true;
             freeBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            if (isFreeSpin) freeText.innerText = 'PUTAR GRATIS...';
         }
 
         if (autoBtn) autoBtn.disabled = true;
-        if (buyBtn) buyBtn.disabled = true;
 
         // Clear matched states
         for (let i = 0; i < 15; i++) {
@@ -1791,11 +1669,12 @@
         if (freeBtn) {
             freeBtn.disabled = false;
             freeBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-            updateFreeSpins(currentFreeSpins);
+            // Kembalikan teks sesuai mode aktif
+            const freeBtnText = document.getElementById('free-spin-text');
+            if (freeBtnText) freeBtnText.innerText = isFreeSpinMode ? 'SPIN GRATIS: ON' : 'SPIN GRATIS: OFF';
         }
 
         if (autoBtn) autoBtn.disabled = false;
-        if (buyBtn) buyBtn.disabled = false;
 
         gameBadge.innerText = 'READY TO SPIN';
         gameBadge.className = 'text-xs px-3 py-1 rounded-full font-bold bg-indigo-900/80 border border-indigo-700 text-indigo-300';

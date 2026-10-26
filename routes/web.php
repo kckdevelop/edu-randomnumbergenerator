@@ -29,15 +29,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/delete-players-bulk', [AdminController::class, 'bulkDeletePlayers'])->name('admin.delete-players-bulk');
     Route::post('/admin/approve-deposit/{id}', [AdminController::class, 'approveDeposit'])->name('admin.approve-deposit');
     Route::post('/admin/reject-deposit/{id}', [AdminController::class, 'rejectDeposit'])->name('admin.reject-deposit');
-    Route::post('/admin/add-free-spins/{id}', [AdminController::class, 'addFreeSpins'])->name('admin.add-free-spins');
-    Route::post('/admin/bulk-add-free-spins', [AdminController::class, 'bulkAddFreeSpins'])->name('admin.bulk-add-free-spins');
     Route::get('/admin/live-logs', [AdminController::class, 'liveLogs'])->name('admin.live-logs');
 
     // Slot Player (Siswa)
     Route::get('/slot', [GameController::class, 'index'])->name('player.slot');
     Route::post('/spin', [GameController::class, 'spin'])->name('player.spin');
-    Route::post('/claim-free-spins', [GameController::class, 'claimFreeSpins'])->name('player.claim-free-spins');
-    Route::post('/buy-free-spins', [GameController::class, 'buyFreeSpins'])->name('player.buy-free-spins');
     Route::post('/deposit', [GameController::class, 'requestDeposit'])->name('player.deposit');
     Route::get('/user-deposits', [GameController::class, 'userDeposits'])->name('player.user-deposits');
 });
