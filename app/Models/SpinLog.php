@@ -16,6 +16,7 @@ class SpinLog extends Model
         'result_amount',
         'status_manipulasi',
         'multiplier',
+        'is_free_spin',
         'grid_pattern',
     ];
 
@@ -26,6 +27,7 @@ class SpinLog extends Model
             'multiplier' => 'float',
             'bet_amount' => 'decimal:2',
             'result_amount' => 'decimal:2',
+            'is_free_spin' => 'boolean',
         ];
     }
 

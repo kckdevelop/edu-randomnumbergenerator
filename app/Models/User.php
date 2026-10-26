@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'role',
         'balance',
+        'free_spins',
     ];
 
     /**
@@ -48,6 +49,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'balance' => 'decimal:2',
+            'free_spins' => 'integer',
         ];
     }
 

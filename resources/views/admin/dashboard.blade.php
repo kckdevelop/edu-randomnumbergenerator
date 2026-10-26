@@ -167,6 +167,12 @@
             </div>
 
             <div class="flex items-center gap-2">
+                <button type="button" onclick="bulkAddFreeSpins(10)"
+                    class="px-3.5 py-2 bg-gradient-to-r from-purple-800 to-indigo-800 hover:from-purple-700 hover:to-indigo-700 border border-purple-500/50 text-purple-200 text-xs font-bold rounded-xl flex items-center gap-2 transition shadow">
+                    <i class="fa-solid fa-gift text-amber-300"></i>
+                    <span>Beri Semua +10 Spin Gratis</span>
+                </button>
+
                 <button id="bulk-delete-btn" onclick="executeBulkDelete()" disabled
                     class="px-3.5 py-2 bg-red-600/40 border border-red-500/40 text-red-200 text-xs font-bold rounded-xl flex items-center gap-2 transition cursor-not-allowed opacity-50 shadow">
                     <i class="fa-solid fa-trash-can"></i>
@@ -185,6 +191,7 @@
                         </th>
                         <th class="py-3.5 px-4">Siswa (Player)</th>
                         <th class="py-3.5 px-4">Saldo Virtual</th>
+                        <th class="py-3.5 px-4">Spin Gratis</th>
                         <th class="py-3.5 px-4">Status Manipulasi Aktif</th>
                         <th class="py-3.5 px-4 text-center">Aksi Manipulasi Instan (Bandar)</th>
                         <th class="py-3.5 px-4 text-right">Kelola Pemain</th>
@@ -206,6 +213,12 @@
                         </td>
                         <td class="py-4 px-4 font-display font-bold text-amber-400" id="player-balance-{{ $player->id }}">
                             Rp {{ number_format($player->balance, 0, ',', '.') }}
+                        </td>
+                        <td class="py-4 px-4" id="player-freespins-{{ $player->id }}">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-950 border border-purple-500/50 text-purple-300">
+                                <i class="fa-solid fa-gift text-[10px] text-amber-300"></i>
+                                <span>{{ (int) $player->free_spins }}x</span>
+                            </span>
                         </td>
                         <td class="py-4 px-4" id="player-badge-{{ $player->id }}">
                             @if($setting === 'lose')
@@ -247,7 +260,10 @@
                             </div>
                         </td>
                         <td class="py-4 px-4 text-right">
-                            <div class="flex items-center justify-end gap-2">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <button type="button" onclick="addPlayerFreeSpins({{ $player->id }}, 5)" class="px-2.5 py-1.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-700 text-purple-300 rounded-lg text-xs font-semibold transition flex items-center gap-1" title="Beri +5 Spin Gratis">
+                                    <i class="fa-solid fa-gift text-amber-400"></i> +5 Spin
+                                </button>
                                 <button type="button" onclick="resetPlayerBalance({{ $player->id }})" class="px-2.5 py-1.5 bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700 text-indigo-300 rounded-lg text-xs font-semibold transition" title="Isi ulang saldo ke Rp 100.000">
                                     <i class="fa-solid fa-rotate-left"></i> Reset Rp 100k
                                 </button>
@@ -499,6 +515,12 @@ if ($proposedWinAmount > $maxWinAllowedThisSpin) {
                                 <td class="py-4 px-4 font-display font-bold text-amber-400" id="player-balance-${p.id}">
                                     Rp ${p.balance_formatted}
                                 </td>
+                                <td class="py-4 px-4" id="player-freespins-${p.id}">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-950 border border-purple-500/50 text-purple-300">
+                                        <i class="fa-solid fa-gift text-[10px] text-amber-300"></i>
+                                        <span>${p.free_spins !== undefined ? p.free_spins : 0}x</span>
+                                    </span>
+                                </td>
                                 <td class="py-4 px-4" id="player-badge-${p.id}">
                                     ${badgeHtml}
                                 </td>
@@ -524,7 +546,10 @@ if ($proposedWinAmount > $maxWinAllowedThisSpin) {
                                     </div>
                                 </td>
                                 <td class="py-4 px-4 text-right">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button type="button" onclick="addPlayerFreeSpins(${p.id}, 5)" class="px-2.5 py-1.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-700 text-purple-300 rounded-lg text-xs font-semibold transition flex items-center gap-1" title="Beri +5 Spin Gratis">
+                                            <i class="fa-solid fa-gift text-amber-400"></i> +5 Spin
+                                        </button>
                                         <button type="button" onclick="resetPlayerBalance(${p.id})" class="px-2.5 py-1.5 bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700 text-indigo-300 rounded-lg text-xs font-semibold transition" title="Isi ulang saldo ke Rp 100.000">
                                             <i class="fa-solid fa-rotate-left"></i> Reset Rp 100k
                                         </button>
@@ -552,11 +577,15 @@ if ($proposedWinAmount > $maxWinAllowedThisSpin) {
                         const badgeClass = isRungkad ? 'bg-red-950 border border-red-500/50 text-red-300' : (isJackpot ? 'bg-emerald-950 border border-emerald-500/50 text-emerald-300' : 'bg-amber-950 border border-amber-500/50 text-amber-300');
                         const resultClass = parseFloat(log.result_amount.replace(/\./g, '').replace(',', '.')) > 0 ? 'text-emerald-400' : 'text-red-400';
 
+                        const betDisplay = log.is_free_spin
+                            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 border border-purple-500/50 text-purple-300"><i class="fa-solid fa-gift text-[9px] text-amber-300"></i> GRATIS</span>'
+                            : `Rp ${log.bet_amount}`;
+
                         html += `
                             <tr class="hover:bg-indigo-900/20 transition text-xs">
                                 <td class="py-3 px-4 font-mono text-indigo-400">${log.created_at}</td>
                                 <td class="py-3 px-4 font-bold text-white">${log.user_name}</td>
-                                <td class="py-3 px-4 text-amber-300">Rp ${log.bet_amount}</td>
+                                <td class="py-3 px-4 text-amber-300">${betDisplay}</td>
                                 <td class="py-3 px-4 font-bold ${resultClass}">Rp ${log.result_amount}</td>
                                 <td class="py-3 px-4 font-bold text-purple-300">${log.multiplier}x</td>
                                 <td class="py-3 px-4">
@@ -706,6 +735,55 @@ if ($proposedWinAmount > $maxWinAllowedThisSpin) {
             }
         })
         .catch(err => console.error("Error bulk deleting players:", err));
+    }
+
+    function addPlayerFreeSpins(playerId, amount = 5) {
+        fetch(`/admin/add-free-spins/${playerId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ amount: amount })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                fetchRealtimeData();
+            } else {
+                alert(data.message || 'Gagal menambahkan spin gratis.');
+            }
+        })
+        .catch(err => console.error("Error adding free spins:", err));
+    }
+
+    function bulkAddFreeSpins(amount = 10) {
+        if (!confirm(`Apakah Anda yakin ingin membagikan +${amount} Spin Gratis ke seluruh siswa sekaligus?`)) {
+            return;
+        }
+
+        fetch(`/admin/bulk-add-free-spins`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ amount: amount })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                fetchRealtimeData();
+            } else {
+                alert(data.message || 'Gagal membagikan spin gratis.');
+            }
+        })
+        .catch(err => console.error("Error bulk adding free spins:", err));
     }
 
     // Auto refresh data every 2 seconds for true real-time dashboard

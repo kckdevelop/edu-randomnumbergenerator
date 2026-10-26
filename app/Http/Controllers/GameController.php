@@ -77,24 +77,109 @@ class GameController extends Controller
      * Hasil putaran slot TIDAK DIPENGARUHI KEBERUNTUNGAN ACAK (RNG),
      * melainkan DI-DIKTE 100% oleh kolom `next_spin_result` di database yang diatur oleh Admin.
      */
+    /**
+     * Klaim bonus spin gratis harian / promo (Fitur Free Spin Gratis)
+     */
+    public function claimFreeSpins(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user->free_spins >= 10) {
+            return response()->json([
+                'success' => false,
+                'message' => "Anda masih memiliki {$user->free_spins} Spin Gratis! Habiskan terlebih dahulu sebelum mengklaim bonus lagi.",
+            ], 400);
+        }
+
+        $bonus = 5;
+        $user->increment('free_spins', $bonus);
+
+        return response()->json([
+            'success' => true,
+            'message' => "🎉 Selamat! Anda mendapatkan {$bonus} Spin Gratis tambahan. Silakan putar slot tanpa memotong saldo!",
+            'free_spins' => (int) $user->free_spins,
+        ]);
+    }
+
+    /**
+     * Fitur Beli Spin Gratis (Buy Free Spin / Buy Feature 100x Bet)
+     */
+    public function buyFreeSpins(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'bet_amount' => ['required', 'numeric', 'min:1000'],
+        ]);
+
+        $betAmount = (float) $request->bet_amount;
+        $cost = $betAmount * 100; // Harga beli fitur di Gates of Olympus = 100x bet
+
+        if ($user->balance < $cost) {
+            return response()->json([
+                'success' => false,
+                'message' => "Saldo virtual Anda tidak mencukupi untuk Beli Fitur Spin Gratis! Dibutuhkan Rp " . number_format($cost, 0, ',', '.') . " (100x nominal bet saat ini).",
+            ], 400);
+        }
+
+        $user->balance -= $cost;
+        $user->free_spins += 10;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "⚡ Berhasil membeli Fitur 10 Spin Gratis seharga Rp " . number_format($cost, 0, ',', '.') . "! Selamat menikmati ronde putaran gratis.",
+            'new_balance' => (float) $user->balance,
+            'free_spins' => (int) $user->free_spins,
+        ]);
+    }
+
+    /**
+     * Endpoint API POST /api/spin
+     * 
+     * KODE INI ADALAH BUKTI UTAMA MANIPULASI BANDAR:
+     * Hasil putaran slot TIDAK DIPENGARUHI KEBERUNTUNGAN ACAK (RNG),
+     * melainkan DI-DIKTE 100% oleh kolom `next_spin_result` di database yang diatur oleh Admin.
+     */
     public function spin(Request $request)
     {
         $user = Auth::user();
 
-        // 1. Validasi Nilai Bet
-        $request->validate([
-            'bet_amount' => ['required', 'numeric', 'min:1000', "max:{$user->balance}"],
-        ]);
+        // 1. Validasi Nilai Bet & Mode Spin Gratis
+        $isFreeSpin = $request->boolean('is_free_spin');
+
+        if ($isFreeSpin) {
+            $request->validate([
+                'bet_amount' => ['required', 'numeric', 'min:1000'],
+            ]);
+
+            if ($user->free_spins <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jatah Spin Gratis Anda telah habis! Silakan klaim bonus spin gratis atau lakukan putaran reguler.',
+                ], 400);
+            }
+
+            // Kurangi 1 jatah spin gratis, saldo TIDAK dipotong untuk taruhan
+            $user->decrement('free_spins');
+            $effectiveBetCost = 0.0;
+        } else {
+            $request->validate([
+                'bet_amount' => ['required', 'numeric', 'min:1000', "max:{$user->balance}"],
+            ]);
+
+            $effectiveBetCost = (float) $request->bet_amount;
+
+            // Cek apakah saldo mencukupi
+            if ($user->balance < $effectiveBetCost) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Saldo virtual Anda tidak mencukupi untuk melakukan bet ini!',
+                ], 400);
+            }
+        }
 
         $betAmount = (float) $request->bet_amount;
-
-        // Cek apakah saldo mencukupi
-        if ($user->balance < $betAmount) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Saldo virtual Anda tidak mencukupi untuk melakukan bet ini!',
-            ], 400);
-        }
 
         // 2. CEK SETTING MANIPULASI DARI ADMIN (BANDAR)
         $setting = GameSetting::firstOrCreate(
@@ -105,7 +190,7 @@ class GameController extends Controller
         $manipulationSetting = $setting->next_spin_result;
 
         // Hitung Pendapatan Admin & Batas Maksimal Kemenangan Pemain (Max 60% dari Total Pendapatan Admin)
-        $totalAdminIncome = (float) SpinLog::sum('bet_amount') + $betAmount;
+        $totalAdminIncome = (float) SpinLog::sum('bet_amount') + $effectiveBetCost;
         $totalPlayerPayouts = (float) SpinLog::sum('result_amount');
         $maxPayoutAllowedTotal = 0.60 * $totalAdminIncome;
         $maxWinAllowedThisSpin = max(0.0, $maxPayoutAllowedTotal - $totalPlayerPayouts);
@@ -124,7 +209,9 @@ class GameController extends Controller
             $multiplier = 0;
             $winAmount = 0;
             $statusLabel = 'Pasti Rungkad / Zonk (Dikontrol Backend Bandar)';
-            $message = 'AKUN ANDA SEDANG DI-SETTING RUNGKAD OLEH BANDAR! Saldo bet Anda lunas diambil sistem.';
+            $message = $isFreeSpin 
+                ? 'PUTARAN GRATIS ZONK! Bahkan di sesi spin gratis pun, bandar tetap mengontrol hasil menjadi rungkad.'
+                : 'AKUN ANDA SEDANG DI-SETTING RUNGKAD OLEH BANDAR! Saldo bet Anda lunas diambil sistem.';
 
         } elseif ($manipulationSetting === 'win') {
             // === MODUS 2: PASTI MENANG JACKPOT ===
@@ -185,24 +272,48 @@ class GameController extends Controller
             }
         }
 
-        // 4. KELOLA SALDO SISWA (PEMOTONGAN BET & PENAMBAHAN KEMENANGAN)
-        $user->balance = $user->balance - $betAmount + $winAmount;
+        // Cek Bonus Scatter Trigger (Jika muncul 4+ simbol petir/zeus)
+        $scatterCount = 0;
+        foreach ($grid as $sym) {
+            if (str_contains($sym, '⚡')) {
+                $scatterCount++;
+            }
+        }
+
+        $awardedFreeSpins = 0;
+        if ($scatterCount >= 4) {
+            $awardedFreeSpins = 10;
+            $user->increment('free_spins', 10);
+            $message .= " ⚡ SCATTER TRIGGER! Anda mendapatkan bonus 10 Spin Gratis tambahan!";
+        }
+
+        // 4. KELOLA SALDO SISWA (PEMOTONGAN BET JIKA BUKAN FREE SPIN & PENAMBAHAN KEMENANGAN)
+        $user->balance = $user->balance - $effectiveBetCost + $winAmount;
         $user->save();
+
+        if ($isFreeSpin) {
+            $statusLabel = '[SPIN GRATIS] ' . $statusLabel;
+        }
 
         // 5. CATAT LOG AUDIT MANIPULASI
         SpinLog::create([
             'user_id' => $user->id,
-            'bet_amount' => $betAmount,
+            'bet_amount' => $effectiveBetCost,
             'result_amount' => $winAmount,
             'status_manipulasi' => $statusLabel,
             'multiplier' => $multiplier,
+            'is_free_spin' => $isFreeSpin,
             'grid_pattern' => $grid,
         ]);
 
         // 6. RETURN RESPONS API UNTUK KONTROL VISUAL SLOT FRONTEND
         return response()->json([
             'success' => true,
+            'is_free_spin' => $isFreeSpin,
+            'free_spins_left' => (int) $user->free_spins,
+            'awarded_free_spins' => $awardedFreeSpins,
             'bet_amount' => $betAmount,
+            'effective_bet_cost' => $effectiveBetCost,
             'win_amount' => $winAmount,
             'multiplier' => $multiplier,
             'new_balance' => (float) $user->balance,

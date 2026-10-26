@@ -203,6 +203,46 @@ class AdminController extends Controller
         return back()->with('success', "Deposit Rp " . number_format($deposit->amount, 0, ',', '.') . " untuk {$userName} telah Ditolak.");
     }
 
+    public function addFreeSpins(Request $request, $userId)
+    {
+        $request->validate([
+            'amount' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $amount = (int) $request->input('amount', 5);
+        $user = User::where('role', 'player')->findOrFail($userId);
+        $user->increment('free_spins', $amount);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil menambahkan {$amount} Spin Gratis untuk {$user->name}. Total: {$user->free_spins} spin gratis.",
+                'free_spins' => (int) $user->free_spins,
+            ]);
+        }
+
+        return back()->with('success', "Berhasil menambahkan {$amount} Spin Gratis untuk {$user->name}. Total: {$user->free_spins} spin gratis.");
+    }
+
+    public function bulkAddFreeSpins(Request $request)
+    {
+        $request->validate([
+            'amount' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $amount = (int) $request->input('amount', 10);
+        $count = User::where('role', 'player')->increment('free_spins', $amount);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil membagikan {$amount} Spin Gratis ke seluruh siswa ({$count} siswa).",
+            ]);
+        }
+
+        return back()->with('success', "Berhasil membagikan {$amount} Spin Gratis ke seluruh siswa ({$count} siswa).");
+    }
+
     public function realtimeData()
     {
         $players = User::where('role', 'player')
@@ -215,6 +255,7 @@ class AdminController extends Controller
                     'email' => $player->email,
                     'balance' => (float) $player->balance,
                     'balance_formatted' => number_format($player->balance, 0, ',', '.'),
+                    'free_spins' => (int) $player->free_spins,
                     'setting' => $player->gameSetting ? $player->gameSetting->next_spin_result : 'lose',
                 ];
             });
@@ -235,6 +276,7 @@ class AdminController extends Controller
                     'bet_amount' => number_format($log->bet_amount, 0, ',', '.'),
                     'result_amount' => number_format($log->result_amount, 0, ',', '.'),
                     'multiplier' => $log->multiplier,
+                    'is_free_spin' => (bool) $log->is_free_spin,
                     'status_manipulasi' => $log->status_manipulasi,
                     'created_at' => $log->created_at->format('H:i:s - d M Y'),
                 ];
