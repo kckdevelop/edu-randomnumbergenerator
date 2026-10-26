@@ -129,20 +129,27 @@ class GameController extends Controller
         $winAmount = 0.0;
         $statusLabel = '';
         $message = '';
+        $winningLines = [];
+        $nearMiss = false;
+        $nearMissDetail = null;
 
         if ($manipulationSetting === 'lose') {
-            // === MODUS 1: PASTI RUNGKAD / KALAH (ZONK) ===
-            // Bandar membuat grid visual acak TANPA ADA kombinasi simbol yang cocok atau scatter petir.
-            $grid = $this->generateLosingGrid();
-            $multiplier = 0;
-            $winAmount = 0;
+            // === MODUS 1: PASTI RUNGKAD / KALAH (ZONK) DENGAN PSIKOLOGI NEAR-MISS ===
+            // Bandar membuat grid visual TANPA kombinasi menang di 10 payline,
+            // tetapi sengaja memasang 2 scatter petir / 2 mahkota berurutan untuk sensasi 'hampir menang'
+            $gridData = $this->generateLosingGridWithNearMiss();
+            $grid = $gridData['grid'];
+            $nearMiss = $gridData['near_miss'];
+            $nearMissDetail = $gridData['near_miss_detail'];
+            $multiplier = 0.0;
+            $winAmount = 0.0;
             $statusLabel = 'Pasti Rungkad / Zonk (Dikontrol Backend Bandar)';
             $message = $isFreeSpin 
                 ? 'PUTARAN GRATIS ZONK! Bahkan di sesi spin gratis pun, bandar tetap mengontrol hasil menjadi rungkad.'
-                : 'AKUN ANDA SEDANG DI-SETTING RUNGKAD OLEH BANDAR! Saldo bet Anda lunas diambil sistem.';
+                : 'AKUN ANDA SEDANG DI-SETTING RUNGKAD OLEH BANDAR! ' . ($nearMiss ? 'Perhatikan bagaimana bandar memberi 2 scatter (hampir menang) untuk memancing Anda terus bermain!' : 'Saldo bet Anda lunas diambil sistem.');
 
         } elseif ($manipulationSetting === 'win') {
-            // === MODUS 2: PASTI MENANG JACKPOT ===
+            // === MODUS 2: PASTI MENANG JACKPOT (KOMBINASI PAYLINE + PERKALIAN ZEUS) ===
             $proposedMultiplier = (float) rand(50, 500); // Perkalian jackpot 50x - 500x
             $proposedWinAmount = $betAmount * $proposedMultiplier;
 
@@ -150,51 +157,65 @@ class GameController extends Controller
                 $maxPossibleMultiplier = (float) floor($maxWinAllowedThisSpin / $betAmount);
                 if ($maxPossibleMultiplier < 1.0) {
                     // Jika memberikan kemenangan 1x saja sudah melebihi 60% total pendapatan admin, paksa Rungkad
-                    $grid = $this->generateLosingGrid();
-                    $multiplier = 0;
-                    $winAmount = 0;
+                    $gridData = $this->generateLosingGridWithNearMiss();
+                    $grid = $gridData['grid'];
+                    $nearMiss = $gridData['near_miss'];
+                    $nearMissDetail = $gridData['near_miss_detail'];
+                    $multiplier = 0.0;
+                    $winAmount = 0.0;
                     $statusLabel = 'Dibatasi Admin Profit Guard (Max 60% Revenue)';
                     $message = 'Sistem membatasi kemenangan! Total payout pemain telah mencapai batas 60% dari total pendapatan admin.';
                 } else {
                     // Capped ke batas multiplier tertinggi yang diperbolehkan
                     $multiplier = min($proposedMultiplier, $maxPossibleMultiplier);
                     $winAmount = $betAmount * $multiplier;
-                    $grid = $this->generateWinningGrid($multiplier);
+                    $gridData = $this->generateJackpotGrid($multiplier, $betAmount);
+                    $grid = $gridData['grid'];
+                    $winningLines = $gridData['winning_lines'];
                     $statusLabel = 'Pasti Menang Jackpot (Dibatasi 60% Revenue Admin)';
                     $message = "SELAMAT! Anda mendapatkan Jackpot x{$multiplier}! (Dibatasi max 60% total pendapatan admin)";
                 }
             } else {
                 $multiplier = $proposedMultiplier;
                 $winAmount = $proposedWinAmount;
-                $grid = $this->generateWinningGrid($multiplier);
+                $gridData = $this->generateJackpotGrid($multiplier, $betAmount);
+                $grid = $gridData['grid'];
+                $winningLines = $gridData['winning_lines'];
                 $statusLabel = 'Pasti Menang Jackpot (Dikontrol Backend Bandar)';
                 $message = "SELAMAT! Anda mendapatkan Jackpot x{$multiplier}! (Hasil manipulasi Admin)";
             }
 
         } elseif ($manipulationSetting === 'random_low_win') {
-            // === MODUS 3: PANCINGAN / MENANG KECIL ===
+            // === MODUS 3: PANCINGAN / MENANG KECIL (1-2 PAYLINE RENDAH) ===
             $proposedMultiplier = (float) (rand(120, 250) / 100); // 1.2x - 2.5x
             $proposedWinAmount = $betAmount * $proposedMultiplier;
 
             if ($proposedWinAmount > $maxWinAllowedThisSpin) {
                 $maxPossibleMultiplier = (float) ($maxWinAllowedThisSpin / $betAmount);
                 if ($maxPossibleMultiplier < 1.0) {
-                    $grid = $this->generateLosingGrid();
-                    $multiplier = 0;
-                    $winAmount = 0;
+                    $gridData = $this->generateLosingGridWithNearMiss();
+                    $grid = $gridData['grid'];
+                    $nearMiss = $gridData['near_miss'];
+                    $nearMissDetail = $gridData['near_miss_detail'];
+                    $multiplier = 0.0;
+                    $winAmount = 0.0;
                     $statusLabel = 'Dibatasi Admin Profit Guard (Max 60% Revenue)';
                     $message = 'Kemenangan pancingan dibatasi karena total payout pemain telah mencapai 60% pendapatan admin!';
                 } else {
                     $multiplier = round($maxPossibleMultiplier, 2);
                     $winAmount = $betAmount * $multiplier;
-                    $grid = $this->generateLowWinGrid();
+                    $gridData = $this->generateLowWinGridWithPaylines($multiplier, $betAmount);
+                    $grid = $gridData['grid'];
+                    $winningLines = $gridData['winning_lines'];
                     $statusLabel = 'Menang Kecil / Pancingan (Dibatasi 60% Revenue)';
                     $message = "Anda Menang Kecil x{$multiplier} (Dibatasi max 60% total pendapatan admin).";
                 }
             } else {
                 $multiplier = $proposedMultiplier;
                 $winAmount = $proposedWinAmount;
-                $grid = $this->generateLowWinGrid();
+                $gridData = $this->generateLowWinGridWithPaylines($multiplier, $betAmount);
+                $grid = $gridData['grid'];
+                $winningLines = $gridData['winning_lines'];
                 $statusLabel = 'Menang Kecil / Pancingan (Dikontrol Backend Bandar)';
                 $message = "Anda Menang Kecil x{$multiplier}. Ini teknik pancingan psikologis judi online agar Anda terus mencoba!";
             }
@@ -232,54 +253,153 @@ class GameController extends Controller
             'status_label'      => $statusLabel,
             'message'           => $message,
             'grid'              => $grid, // 15 simbol visual untuk slot grid 5x3
+            'winning_lines'     => $winningLines, // Garis payline yang menang
+            'near_miss'         => $nearMiss,
+            'near_miss_detail'  => $nearMissDetail,
+            'paylines_count'    => 10,
         ]);
     }
 
     /**
-     * Membuat kombinasi 15 simbol slot Zonk (Kalah)
+     * Definisi 10 Payline Standar Mesin Slot 5x3:
+     * Kolom (Reel): 0 s/d 4 | Baris: 0 (atas), 1 (tengah), 2 (bawah)
+     * Index = (baris * 5) + kolom
+     */
+    public const PAYLINES = [
+        1 => ['name' => 'Line 1 (Tengah)',     'indices' => [5, 6, 7, 8, 9]],
+        2 => ['name' => 'Line 2 (Atas)',       'indices' => [0, 1, 2, 3, 4]],
+        3 => ['name' => 'Line 3 (Bawah)',      'indices' => [10, 11, 12, 13, 14]],
+        4 => ['name' => 'Line 4 (V-Shape)',    'indices' => [0, 6, 12, 8, 4]],
+        5 => ['name' => 'Line 5 (Piramida)',   'indices' => [10, 6, 2, 8, 14]],
+        6 => ['name' => 'Line 6 (Top-Zigzag)', 'indices' => [0, 1, 7, 3, 4]],
+        7 => ['name' => 'Line 7 (Bot-Zigzag)', 'indices' => [10, 11, 7, 13, 14]],
+        8 => ['name' => 'Line 8 (Puncak)',     'indices' => [5, 1, 2, 3, 9]],
+        9 => ['name' => 'Line 9 (Lembah)',     'indices' => [5, 11, 12, 13, 9]],
+        10=> ['name' => 'Line 10 (Diagonal)',  'indices' => [0, 6, 7, 8, 14]],
+    ];
+
+    /**
+     * Membuat kombinasi 15 simbol slot Zonk (Kalah) dengan psikologi Near-Miss.
+     * Tidak ada 3 simbol cocok di 10 payline dari Reel 1 (kiri).
+     */
+    private function generateLosingGridWithNearMiss(): array
+    {
+        // Koleksi simbol umum
+        $pool = ['💎 PERMATA', '💚 GIOK', '💙 SAFIR', '🍷 CAWAN', '💍 CINCIN', '⏳ JAM PASIR'];
+        
+        // Buat grid dasar acak yang diatur agar kolom 0, 1, 2 tidak bersambung 3
+        $grid = [
+            '💎 PERMATA', '💚 GIOK',    '💙 SAFIR',   '💍 CINCIN',   '⏳ JAM PASIR',
+            '👑 MAHKOTA', '👑 MAHKOTA', '🍷 CAWAN',   '💎 PERMATA',  '💚 GIOK', // Line 1 hampir menang (2 Mahkota lalu putus)
+            '⚡ ZEUS',    '💙 SAFIR',   '⚡ ZEUS',    '💍 CINCIN',   '🍷 CAWAN', // 2 Scatter (Reel 1 & 3) memicu tensi
+        ];
+
+        // Variasi near-miss random agar tidak monoton
+        $nearMissType = rand(1, 2);
+        if ($nearMissType === 1) {
+            $nearMiss = true;
+            $nearMissDetail = 'Hampir dapat 3 Scatter Zeus! Simbol petir muncul di Reel 1 & 3 tapi meleset di Reel 4 & 5.';
+        } else {
+            $nearMiss = true;
+            $nearMissDetail = 'Hampir tembus 5 Mahkota! 2 Mahkota berurutan di Reel 1 & 2 terputus oleh Cawan di Reel 3.';
+            $grid[10] = '💍 CINCIN';
+            $grid[12] = '💚 GIOK';
+        }
+
+        return [
+            'grid' => $grid,
+            'near_miss' => $nearMiss,
+            'near_miss_detail' => $nearMissDetail,
+        ];
+    }
+
+    /**
+     * Membuat kombinasi Menang Kecil (Pancingan / 1-2 Payline Aktif)
+     */
+    private function generateLowWinGridWithPaylines(float $multiplier, float $betAmount): array
+    {
+        // Grid default
+        $grid = [
+            '💙 SAFIR',    '💍 CINCIN',   '💚 GIOK',    '⏳ JAM PASIR', '💎 PERMATA',
+            '💎 PERMATA',  '💎 PERMATA',  '💎 PERMATA', '🍷 CAWAN',     '💙 SAFIR', // Line 1: 3x Permata = Pancingan
+            '🍷 CAWAN',    '⏳ JAM PASIR','💍 CINCIN',  '💚 GIOK',      '👑 MAHKOTA',
+        ];
+
+        $winningLines = [
+            [
+                'line_number'  => 1,
+                'name'         => 'Line 1 (Tengah)',
+                'symbol'       => '💎',
+                'label'        => 'PERMATA MERAH',
+                'count'        => 3,
+                'multiplier'   => $multiplier,
+                'indices'      => [5, 6, 7],
+                'win_amount'   => $betAmount * $multiplier,
+            ]
+        ];
+
+        return [
+            'grid' => $grid,
+            'winning_lines' => $winningLines,
+        ];
+    }
+
+    /**
+     * Membuat kombinasi Menang Jackpot (Zeus Scatter + Multi Paylines)
+     */
+    private function generateJackpotGrid(float $multiplier, float $betAmount): array
+    {
+        // Grid spektakuler: Line 1 penuh 5x Mahkota, Line 4 4x Jam Pasir, Zeus Scatter
+        $grid = [
+            '⏳ JAM PASIR', '💍 CINCIN',   '⚡ ZEUS x' . (int)$multiplier, '💍 CINCIN',   '⏳ JAM PASIR',
+            '👑 MAHKOTA',   '👑 MAHKOTA',  '👑 MAHKOTA',                   '👑 MAHKOTA',  '👑 MAHKOTA', // Line 1: 5x Mahkota!
+            '⚡ ZEUS',      '⏳ JAM PASIR', '👑 MAHKOTA',                   '⏳ JAM PASIR', '⚡ ZEUS',
+        ];
+
+        $winningLines = [
+            [
+                'line_number'  => 1,
+                'name'         => 'Line 1 (Tengah)',
+                'symbol'       => '👑',
+                'label'        => 'MAHKOTA OLYMPUS (5X MATCH)',
+                'count'        => 5,
+                'multiplier'   => $multiplier,
+                'indices'      => [5, 6, 7, 8, 9],
+                'win_amount'   => $betAmount * $multiplier,
+            ],
+            [
+                'line_number'  => 4,
+                'name'         => 'Line 4 (V-Shape)',
+                'symbol'       => '⏳',
+                'label'        => 'JAM PASIR EMAS (COMBO)',
+                'count'        => 3,
+                'multiplier'   => 5.0,
+                'indices'      => [0, 6, 12],
+                'win_amount'   => $betAmount * 5.0,
+            ]
+        ];
+
+        return [
+            'grid' => $grid,
+            'winning_lines' => $winningLines,
+        ];
+    }
+
+    /**
+     * Fallback method lama untuk kompatibilitas
      */
     private function generateLosingGrid(): array
     {
-        $symbols = ['💎', '💚', '💙', '⏳', '💍'];
-        $grid = [];
-        for ($i = 0; $i < 15; $i++) {
-            $grid[] = $symbols[$i % count($symbols)];
-        }
-        shuffle($grid);
-        return $grid;
+        return $this->generateLosingGridWithNearMiss()['grid'];
     }
 
-    /**
-     * Membuat kombinasi 15 simbol slot Menang Jackpot (Zeus & Mahkota)
-     */
     private function generateWinningGrid(float $multiplier): array
     {
-        $grid = [];
-        $grid[] = '⚡ ZEUS x' . (int)$multiplier;
-        for ($i = 0; $i < 7; $i++) {
-            $grid[] = '👑 MAHKOTA';
-        }
-        for ($i = 0; $i < 7; $i++) {
-            $grid[] = '💍 CINCIN';
-        }
-        shuffle($grid);
-        return $grid;
+        return $this->generateJackpotGrid($multiplier, 10000)['grid'];
     }
 
-    /**
-     * Membuat kombinasi 15 simbol slot Menang Kecil (Pancingan)
-     */
     private function generateLowWinGrid(): array
     {
-        $grid = [];
-        for ($i = 0; $i < 4; $i++) {
-            $grid[] = '⏳ JAM PASIR';
-        }
-        $otherSymbols = ['💎', '💚', '💙', '💍'];
-        for ($i = 0; $i < 11; $i++) {
-            $grid[] = $otherSymbols[rand(0, count($otherSymbols) - 1)];
-        }
-        shuffle($grid);
-        return $grid;
+        return $this->generateLowWinGridWithPaylines(1.5, 10000)['grid'];
     }
 }

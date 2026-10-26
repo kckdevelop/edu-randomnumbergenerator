@@ -524,6 +524,138 @@
     80%  { opacity: 1; }
     100% { transform: translateY(105vh) rotate(540deg) scale(0.5); opacity: 0; }
 }
+
+/* =============================================
+   AUTHENTIC SLOT MACHINE STYLES & PAYLINE SYSTEM
+   ============================================= */
+
+/* Anticipation Tension State for Reels 4 & 5 */
+.slot-box.anticipation {
+    border-color: #F59E0B !important;
+    box-shadow: 0 0 25px #F59E0B, inset 0 0 20px rgba(245, 158, 11, 0.5) !important;
+    animation: anticipationPulse 0.15s infinite alternate !important;
+}
+
+@keyframes anticipationPulse {
+    0%   { transform: scale(1); filter: brightness(1.2); }
+    100% { transform: scale(1.04); filter: brightness(1.6); }
+}
+
+/* Winning Payline Cell Highlight */
+.slot-box.payline-winner {
+    border-color: #10B981 !important;
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.9), inset 0 0 20px rgba(16, 185, 129, 0.4) !important;
+    animation: winnerCellGlow 0.5s ease-in-out infinite alternate;
+    z-index: 25 !important;
+}
+
+@keyframes winnerCellGlow {
+    0%   { transform: scale(1); background: rgba(16, 185, 129, 0.1); }
+    100% { transform: scale(1.06); background: rgba(16, 185, 129, 0.25); }
+}
+
+/* Payline Number Side Tags */
+.payline-tag {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 0.65rem;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: #1e1b4b;
+    border: 1px solid #4338ca;
+    color: #a5b4fc;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    user-select: none;
+    cursor: pointer;
+}
+
+.payline-tag:hover {
+    border-color: #fbbf24;
+    color: #fbbf24;
+    transform: scale(1.1);
+}
+
+.payline-tag.active {
+    background: linear-gradient(135deg, #10B981, #047857) !important;
+    border-color: #34D399 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 0 12px #10B981;
+    transform: scale(1.25);
+    animation: tagActivePulse 0.4s infinite alternate;
+}
+
+@keyframes tagActivePulse {
+    0%   { box-shadow: 0 0 8px #10B981; }
+    100% { box-shadow: 0 0 20px #34D399; }
+}
+
+/* Slot Machine LCD / Digital Meters */
+.slot-meter-box {
+    background: linear-gradient(180deg, #090814 0%, #05040d 100%);
+    border: 1px solid #312E81;
+    border-radius: 12px;
+    padding: 6px 12px;
+    text-align: center;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+}
+
+.slot-meter-label {
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #818CF8;
+}
+
+.slot-meter-val {
+    font-family: 'Outfit', monospace;
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+}
+
+/* Payline Ticker Ribbon */
+#payline-ticker {
+    display: none;
+    background: linear-gradient(90deg, rgba(5, 150, 105, 0.9), rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.9));
+    border: 1px solid #34D399;
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    border-radius: 12px;
+    padding: 8px 16px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    animation: tickerIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes tickerIn {
+    0%   { transform: scale(0.9) translateY(-10px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Near-Miss Alert Banner */
+#near-miss-banner {
+    display: none;
+    background: linear-gradient(90deg, rgba(88, 28, 135, 0.9), rgba(124, 58, 237, 0.95), rgba(88, 28, 135, 0.9));
+    border: 1px solid #C084FC;
+    color: #F5D0FE;
+    font-size: 0.75rem;
+    border-radius: 12px;
+    padding: 8px 14px;
+    animation: nearMissBounce 0.4s ease;
+}
+
+@keyframes nearMissBounce {
+    0%   { transform: translateY(-8px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
 </style>
 @endpush
 
@@ -619,6 +751,189 @@
                     @endforelse
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     PAYTABLE & RULES MODAL (10 PAYLINES & SYMBOL MULTIPLIERS)
+     ============================================================ -->
+<div id="paytable-modal-backdrop" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] hidden items-center justify-center p-4">
+    <div class="max-w-3xl w-full glass-card rounded-3xl gold-border overflow-hidden shadow-2xl relative max-h-[92vh] flex flex-col">
+        <!-- Header -->
+        <div class="p-5 bg-gradient-to-r from-indigo-950 via-purple-950 to-indigo-950 border-b border-indigo-700/60 flex items-center justify-between shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <div>
+                    <h3 class="font-display font-black text-lg text-white">ATURAN &amp; PAYTABLE RESMI</h3>
+                    <p class="text-xs text-amber-300 font-semibold">Konsep Mesin Slot 5x3 • 10 Payline Aktif • Edukasi Manipulasi</p>
+                </div>
+            </div>
+            <button onclick="closePaytableModal()" class="text-indigo-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable Body -->
+        <div class="p-6 overflow-y-auto space-y-6 text-indigo-200">
+            
+            <!-- Section 1: Symbol Multipliers -->
+            <div>
+                <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-gem"></i> Nilai Payout Simbol (Perkalian dari Nilai Bet)
+                </h4>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <!-- Mahkota -->
+                    <div class="bg-indigo-950/80 border border-amber-500/40 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">👑</div>
+                        <p class="text-xs font-black text-amber-300">MAHKOTA</p>
+                        <p class="text-[10px] text-indigo-400 font-semibold">Tingkat Tertinggi</p>
+                        <div class="mt-2 text-[11px] space-y-0.5 font-mono">
+                            <div class="text-emerald-400 font-bold">5x: 50.0x Bet</div>
+                            <div class="text-indigo-300">4x: 15.0x Bet</div>
+                            <div class="text-indigo-400">3x: 5.0x Bet</div>
+                        </div>
+                    </div>
+                    <!-- Jam Pasir -->
+                    <div class="bg-indigo-950/80 border border-indigo-700/60 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">⏳</div>
+                        <p class="text-xs font-black text-amber-200">JAM PASIR</p>
+                        <p class="text-[10px] text-indigo-400 font-semibold">Tingkat Tinggi</p>
+                        <div class="mt-2 text-[11px] space-y-0.5 font-mono">
+                            <div class="text-emerald-400 font-bold">5x: 25.0x Bet</div>
+                            <div class="text-indigo-300">4x: 8.0x Bet</div>
+                            <div class="text-indigo-400">3x: 3.0x Bet</div>
+                        </div>
+                    </div>
+                    <!-- Cincin -->
+                    <div class="bg-indigo-950/80 border border-indigo-700/60 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">💍</div>
+                        <p class="text-xs font-black text-purple-300">CINCIN DELIMA</p>
+                        <p class="text-[10px] text-indigo-400 font-semibold">Tingkat Menengah</p>
+                        <div class="mt-2 text-[11px] space-y-0.5 font-mono">
+                            <div class="text-emerald-400 font-bold">5x: 12.0x Bet</div>
+                            <div class="text-indigo-300">4x: 5.0x Bet</div>
+                            <div class="text-indigo-400">3x: 2.0x Bet</div>
+                        </div>
+                    </div>
+                    <!-- Cawan -->
+                    <div class="bg-indigo-950/80 border border-indigo-700/60 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">🍷</div>
+                        <p class="text-xs font-black text-red-300">CAWAN ANGGUR</p>
+                        <p class="text-[10px] text-indigo-400 font-semibold">Tingkat Menengah</p>
+                        <div class="mt-2 text-[11px] space-y-0.5 font-mono">
+                            <div class="text-emerald-400 font-bold">5x: 8.0x Bet</div>
+                            <div class="text-indigo-300">4x: 4.0x Bet</div>
+                            <div class="text-indigo-400">3x: 1.5x Bet</div>
+                        </div>
+                    </div>
+                    <!-- Permata Merah -->
+                    <div class="bg-indigo-950/80 border border-indigo-800 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">💎</div>
+                        <p class="text-xs font-black text-pink-300">PERMATA MERAH</p>
+                        <p class="text-[10px] text-indigo-400 font-semibold">Tingkat Rendah</p>
+                        <div class="mt-2 text-[11px] space-y-0.5 font-mono">
+                            <div class="text-emerald-400 font-bold">5x: 5.0x Bet</div>
+                            <div class="text-indigo-300">4x: 2.5x Bet</div>
+                            <div class="text-indigo-400">3x: 1.0x Bet</div>
+                        </div>
+                    </div>
+                    <!-- Giok Hijau -->
+                    <div class="bg-indigo-950/80 border border-indigo-800 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">💚</div>
+                        <p class="text-xs font-black text-emerald-300">GIOK HIJAU</p>
+                        <p class="text-[10px] text-indigo-400 font-semibold">Tingkat Rendah</p>
+                        <div class="mt-2 text-[11px] space-y-0.5 font-mono">
+                            <div class="text-emerald-400 font-bold">5x: 4.0x Bet</div>
+                            <div class="text-indigo-300">4x: 1.8x Bet</div>
+                            <div class="text-indigo-400">3x: 0.6x Bet</div>
+                        </div>
+                    </div>
+                    <!-- Safir Biru -->
+                    <div class="bg-indigo-950/80 border border-indigo-800 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">💙</div>
+                        <p class="text-xs font-black text-blue-300">SAFIR BIRU</p>
+                        <p class="text-[10px] text-indigo-400 font-semibold">Tingkat Rendah</p>
+                        <div class="mt-2 text-[11px] space-y-0.5 font-mono">
+                            <div class="text-emerald-400 font-bold">5x: 3.0x Bet</div>
+                            <div class="text-indigo-300">4x: 1.2x Bet</div>
+                            <div class="text-indigo-400">3x: 0.4x Bet</div>
+                        </div>
+                    </div>
+                    <!-- Zeus Scatter -->
+                    <div class="bg-gradient-to-b from-purple-950 to-indigo-950 border border-purple-500/50 rounded-xl p-3 text-center">
+                        <div class="text-3xl mb-1">⚡</div>
+                        <p class="text-xs font-black text-amber-300">ZEUS SCATTER</p>
+                        <p class="text-[10px] text-purple-300 font-semibold">Simbol Spesial</p>
+                        <div class="mt-2 text-[10px] text-indigo-200">
+                            <b>2x:</b> Tensi Near-Miss<br>
+                            <b>3x+:</b> Jackpot Perkalian Petir (50x - 500x)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: 10 Paylines Diagram -->
+            <div class="pt-4 border-t border-indigo-900/60">
+                <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-lines-leaning"></i> 10 Pola Garis Pembayaran (Paylines)
+                </h4>
+                <p class="text-xs text-indigo-300 mb-3">Kombinasi simbol harus berurutan minimal 3 simbol dari reel 1 (paling kiri) ke kanan mengikuti pola garis berikut:</p>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 1:</span> Horizontal Tengah
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 2:</span> Horizontal Atas
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 3:</span> Horizontal Bawah
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 4:</span> Bentuk V
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 5:</span> Bentuk Piramida
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 6:</span> Top Zigzag
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 7:</span> Bottom Zigzag
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 8:</span> Puncak (Peak)
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 9:</span> Lembah (Valley)
+                    </div>
+                    <div class="bg-indigo-950/60 border border-indigo-800 p-2 rounded-lg text-center">
+                        <span class="font-bold text-amber-300">Line 10:</span> Diagonal Turun
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Edukasi Manipulasi Slot -->
+            <div class="pt-4 border-t border-indigo-900/60 bg-red-950/30 border border-red-500/30 rounded-2xl p-4">
+                <h4 class="text-xs font-black text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Fakta Edukasi: Realita Mesin Slot vs Judi Online Ilegal
+                </h4>
+                <ul class="text-xs space-y-2 text-indigo-200 list-disc list-inside">
+                    <li><b class="text-amber-300">Manipulasi 100% oleh Bandar:</b> Di judi online ilegal, kemenangan dan kekalahan TIDAK diacak murni oleh keberuntungan, melainkan diatur dari panel kendali bandar (seperti menu Admin di simulasi ini).</li>
+                    <li><b class="text-amber-300">Trik Psikologis "Near-Miss" (Hampir Menang):</b> Bandar sengaja memunculkan 2 scatter atau 2 simbol mahkota yang 'hampir' tersambung untuk memicu dopamin dan ilusi bahwa keberuntungan Anda sudah dekat, padahal hasil sudah di-lock kalah.</li>
+                    <li><b class="text-amber-300">Loss Disguised as Win (Kemenangan Umpan):</b> Ketika Anda bet Rp 20.000 dan menang Rp 15.000, mesin tetap merayakan dengan suara kemenangan meriah padahal Anda rugi Rp 5.000.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 bg-indigo-950 border-t border-indigo-900/60 text-center shrink-0">
+            <button onclick="closePaytableModal()" class="py-2.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-display font-black text-xs uppercase tracking-wider shadow-lg transition">
+                TUTUP PAYTABLE
+            </button>
         </div>
     </div>
 </div>
@@ -734,33 +1049,110 @@
         <!-- Jackpot Banner (appears on win) -->
         <div id="jackpot-banner">⚡ ZEUS JACKPOT! ⚡</div>
 
-        <!-- Slot Grid Title Header -->
-        <div class="flex items-center justify-between mb-4 pb-3 border-t border-indigo-900/60 pt-3 mt-2">
-            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
-                <i class="fa-solid fa-grip text-amber-400"></i> REEL GRID 5x3 (15 SYMBOLS)
-            </span>
-            <span id="game-status-badge" class="text-xs px-3 py-1 rounded-full font-bold bg-indigo-900/80 border border-indigo-700 text-indigo-300">
-                READY TO SPIN
-            </span>
+        <!-- Slot Grid Title Header & Controls -->
+        <div class="flex flex-wrap items-center justify-between mb-4 pb-3 border-t border-indigo-900/60 pt-3 mt-2 gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-grip text-amber-400"></i> REEL 5x3 • 10 PAYLINES
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Tombol Aturan & Paytable -->
+                <button onclick="openPaytableModal()" type="button"
+                    class="px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-amber-500/40 text-amber-300 text-xs font-bold transition flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-circle-info text-amber-400"></i>
+                    <span>PAYTABLE</span>
+                </button>
+
+                <!-- Tombol Audio Mute/Unmute -->
+                <button onclick="toggleSound()" type="button" id="sound-btn"
+                    class="px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700 text-indigo-300 text-xs font-bold transition flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-volume-high text-amber-400" id="sound-icon"></i>
+                    <span id="sound-text">AUDIO ON</span>
+                </button>
+
+                <span id="game-status-badge" class="text-xs px-3 py-1 rounded-full font-bold bg-indigo-900/80 border border-indigo-700 text-indigo-300">
+                    READY TO SPIN
+                </span>
+            </div>
         </div>
 
-        <!-- 5x3 Reel Grid UI -->
-        <div id="reel-grid" class="grid grid-cols-5 gap-2 sm:gap-3 my-4">
-            @for($i = 0; $i < 15; $i++)
-            <div class="slot-cell-wrapper">
-                <div id="slot-cell-{{ $i }}" class="slot-box w-full h-full rounded-2xl flex flex-col items-center justify-center p-2 text-center select-none shadow-inner border border-indigo-800/80">
-                    <span class="symbol-icon text-3xl sm:text-4xl">
-                        @php
-                            $defaultSymbols = ['⚡', '👑', '💍', '⏳', '💎', '💚', '💙'];
-                            echo $defaultSymbols[$i % count($defaultSymbols)];
-                        @endphp
-                    </span>
-                    <span class="symbol-label text-[10px] font-bold text-indigo-300 mt-1 uppercase tracking-tighter">
-                        OLYMPUS
-                    </span>
-                </div>
+        <!-- Slot Machine LCD Digital Meters -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            <div class="slot-meter-box">
+                <div class="slot-meter-label"><i class="fa-solid fa-coins text-amber-400 mr-1"></i> Taruhan (Bet)</div>
+                <div class="slot-meter-val text-amber-300" id="meter-bet">Rp 10.000</div>
             </div>
-            @endfor
+            <div class="slot-meter-box">
+                <div class="slot-meter-label"><i class="fa-solid fa-lines-leaning text-indigo-400 mr-1"></i> Garis Aktif</div>
+                <div class="slot-meter-val text-indigo-200">10 LINES</div>
+            </div>
+            <div class="slot-meter-box">
+                <div class="slot-meter-label"><i class="fa-solid fa-trophy text-emerald-400 mr-1"></i> Menang (Win)</div>
+                <div class="slot-meter-val text-emerald-400" id="meter-win">Rp 0</div>
+            </div>
+            <div class="slot-meter-box">
+                <div class="slot-meter-label"><i class="fa-solid fa-wallet text-purple-400 mr-1"></i> Saldo Pemain</div>
+                <div class="slot-meter-val text-purple-300" id="meter-balance">Rp {{ number_format($user->balance, 0, ',', '.') }}</div>
+            </div>
+        </div>
+
+        <!-- Winning Payline Ticker Ribbon -->
+        <div id="payline-ticker" class="mb-3">
+            <i class="fa-solid fa-sparkles mr-2 text-amber-300"></i>
+            <span id="payline-ticker-text">SELAMAT! KEMENANGAN TERHUBUNG!</span>
+        </div>
+
+        <!-- Near-Miss Educational Alert Banner -->
+        <div id="near-miss-banner" class="mb-3 flex items-start gap-2.5">
+            <i class="fa-solid fa-eye text-amber-300 text-base shrink-0 mt-0.5"></i>
+            <div>
+                <p class="font-black text-amber-300 uppercase tracking-wider text-[11px]">TRIK PSIKOLOGI "NEAR-MISS" (HAMPIR MENANG) BANDAR</p>
+                <p class="text-[11px] text-purple-200 mt-0.5" id="near-miss-text">
+                    Bandar sengaja memunculkan 2 Scatter Zeus untuk memicu ilusi bahwa Anda "hampir jackpot", padahal sistem sudah memastikan Anda kalah 100%!
+                </p>
+            </div>
+        </div>
+
+        <!-- 5x3 Reel Grid UI Flanked with Payline Tags -->
+        <div class="flex items-center gap-2 sm:gap-3 my-3">
+            <!-- Left Payline Indicators (1, 2, 4, 6, 8) -->
+            <div class="flex flex-col justify-around py-4 h-full gap-5 shrink-0 hidden sm:flex">
+                <div class="payline-tag" id="payline-tag-1" onclick="previewPayline(1)" title="Line 1 (Tengah)">1</div>
+                <div class="payline-tag" id="payline-tag-2" onclick="previewPayline(2)" title="Line 2 (Atas)">2</div>
+                <div class="payline-tag" id="payline-tag-4" onclick="previewPayline(4)" title="Line 4 (V-Shape)">4</div>
+                <div class="payline-tag" id="payline-tag-6" onclick="previewPayline(6)" title="Line 6 (Top Zigzag)">6</div>
+                <div class="payline-tag" id="payline-tag-8" onclick="previewPayline(8)" title="Line 8 (Puncak)">8</div>
+            </div>
+
+            <!-- Main 5x3 Reel Grid -->
+            <div id="reel-grid" class="grid grid-cols-5 gap-2 sm:gap-3 flex-grow">
+                @for($i = 0; $i < 15; $i++)
+                <div class="slot-cell-wrapper">
+                    <div id="slot-cell-{{ $i }}" class="slot-box w-full h-full rounded-2xl flex flex-col items-center justify-center p-2 text-center select-none shadow-inner border border-indigo-800/80">
+                        <span class="symbol-icon text-3xl sm:text-4xl">
+                            @php
+                                $defaultSymbols = ['⚡', '👑', '💍', '⏳', '💎', '💚', '💙', '🍷'];
+                                echo $defaultSymbols[$i % count($defaultSymbols)];
+                            @endphp
+                        </span>
+                        <span class="symbol-label text-[10px] font-bold text-indigo-300 mt-1 uppercase tracking-tighter">
+                            OLYMPUS
+                        </span>
+                    </div>
+                </div>
+                @endfor
+            </div>
+
+            <!-- Right Payline Indicators (3, 5, 7, 9, 10) -->
+            <div class="flex flex-col justify-around py-4 h-full gap-5 shrink-0 hidden sm:flex">
+                <div class="payline-tag" id="payline-tag-3" onclick="previewPayline(3)" title="Line 3 (Bawah)">3</div>
+                <div class="payline-tag" id="payline-tag-5" onclick="previewPayline(5)" title="Line 5 (Piramida)">5</div>
+                <div class="payline-tag" id="payline-tag-7" onclick="previewPayline(7)" title="Line 7 (Bot Zigzag)">7</div>
+                <div class="payline-tag" id="payline-tag-9" onclick="previewPayline(9)" title="Line 9 (Lembah)">9</div>
+                <div class="payline-tag" id="payline-tag-10" onclick="previewPayline(10)" title="Line 10 (Diagonal)">10</div>
+            </div>
         </div>
 
         <!-- Bet & Spin Control Bar -->
@@ -890,30 +1282,240 @@
 <script>
     let isSpinning = false;
     let currentBalance = {{ (float) $user->balance }};
-    const availableSymbols = ['⚡', '👑', '💍', '⏳', '💎', '💚', '💙'];
-    const symbolLabels   = { '⚡': 'PETIR', '👑': 'MAHKOTA', '💍': 'CINCIN', '⏳': 'JAM PASIR', '💎': 'PERMATA', '💚': 'GIOK', '💙': 'SAFIR' };
+    const availableSymbols = ['⚡', '👑', '💍', '⏳', '💎', '💚', '💙', '🍷'];
+    const symbolLabels   = { 
+        '⚡': 'PETIR', 
+        '👑': 'MAHKOTA', 
+        '💍': 'CINCIN', 
+        '⏳': 'JAM PASIR', 
+        '🍷': 'CAWAN',
+        '💎': 'PERMATA', 
+        '💚': 'GIOK', 
+        '💙': 'SAFIR' 
+    };
 
-    // ─── Teleport popup, toast & deposit modal to <body> so position:fixed is always relative to viewport ───
+    // ─── 10 Paylines Definition (0 to 14 cell indices) ───────────────────────────
+    const paylinesMap = {
+        1:  { name: 'Line 1 (Tengah)',     cells: [5, 6, 7, 8, 9] },
+        2:  { name: 'Line 2 (Atas)',       cells: [0, 1, 2, 3, 4] },
+        3:  { name: 'Line 3 (Bawah)',      cells: [10, 11, 12, 13, 14] },
+        4:  { name: 'Line 4 (V-Shape)',    cells: [0, 6, 12, 8, 4] },
+        5:  { name: 'Line 5 (Piramida)',   cells: [10, 6, 2, 8, 14] },
+        6:  { name: 'Line 6 (Top-Zigzag)', cells: [0, 1, 7, 3, 4] },
+        7:  { name: 'Line 7 (Bot-Zigzag)', cells: [10, 11, 7, 13, 14] },
+        8:  { name: 'Line 8 (Puncak)',     cells: [5, 1, 2, 3, 9] },
+        9:  { name: 'Line 9 (Lembah)',     cells: [5, 11, 12, 13, 9] },
+        10: { name: 'Line 10 (Diagonal)',  cells: [0, 6, 7, 8, 14] }
+    };
+
+    // ─── Web Audio API Synthesizer (Zero asset loading issues, 100% reliable) ─────
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function toggleSound() {
+        initAudio();
+        soundEnabled = !soundEnabled;
+        const icon = document.getElementById('sound-icon');
+        const text = document.getElementById('sound-text');
+        if (soundEnabled) {
+            icon.className = 'fa-solid fa-volume-high text-amber-400';
+            text.innerText = 'AUDIO ON';
+            playReelStopSound(true);
+        } else {
+            icon.className = 'fa-solid fa-volume-xmark text-gray-400';
+            text.innerText = 'MUTED';
+        }
+    }
+
+    function playReelTick() {
+        if (!soundEnabled || !audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(120 + Math.random() * 40, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.04);
+        } catch(e){}
+    }
+
+    function playReelStopSound(isScatter = false) {
+        if (!soundEnabled || !audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            if (isScatter) {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+            } else {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(95, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            }
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + (isScatter ? 0.35 : 0.08));
+        } catch(e){}
+    }
+
+    function playAnticipationSound() {
+        if (!soundEnabled || !audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(750, audioCtx.currentTime + 1.2);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.2);
+        } catch(e){}
+    }
+
+    function playWinSound(isBig = false) {
+        if (!soundEnabled || !audioCtx) return;
+        try {
+            const notes = isBig 
+                ? [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50] 
+                : [329.63, 392.00, 523.25];
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.1);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime + idx * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.1 + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + idx * 0.1);
+                osc.stop(audioCtx.currentTime + idx * 0.1 + 0.3);
+            });
+        } catch(e){}
+    }
+
+    function playThunderSound() {
+        if (!soundEnabled || !audioCtx) return;
+        try {
+            const bufferSize = audioCtx.sampleRate * 1.5;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            const whiteNoise = audioCtx.createBufferSource();
+            whiteNoise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 1.4);
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+            whiteNoise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            whiteNoise.start();
+            whiteNoise.stop(audioCtx.currentTime + 1.5);
+        } catch(e){}
+    }
+
+    // ─── Modal Teleportation & Global Key Handlers ───────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
         const backdrop = document.getElementById('win-popup-backdrop');
         const toast    = document.getElementById('small-win-toast');
         const depModal = document.getElementById('deposit-modal-backdrop');
+        const payModal = document.getElementById('paytable-modal-backdrop');
         if (backdrop) document.body.appendChild(backdrop);
         if (toast)    document.body.appendChild(toast);
         if (depModal) document.body.appendChild(depModal);
+        if (payModal) document.body.appendChild(payModal);
     });
 
-    // Close popup with ESC key
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeWinPopup();
             closeDepositModal();
+            closePaytableModal();
         }
     });
 
-    // ─── Deposit Modal Handlers ──────────────────────────────────────────────────
+    // ─── Paytable Modal Handlers ────────────────────────────────────────────────
+    function openPaytableModal() {
+        initAudio();
+        const modal = document.getElementById('paytable-modal-backdrop');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
 
+    function closePaytableModal() {
+        const modal = document.getElementById('paytable-modal-backdrop');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    // Preview specific payline by clicking tag on left/right
+    function previewPayline(lineNum) {
+        initAudio();
+        playReelStopSound(false);
+        const line = paylinesMap[lineNum];
+        if (!line) return;
+
+        // Highlight cells temporarily
+        for (let i = 0; i < 15; i++) {
+            document.getElementById(`slot-cell-${i}`).classList.remove('payline-winner');
+        }
+        document.querySelectorAll('.payline-tag').forEach(t => t.classList.remove('active'));
+        const tag = document.getElementById(`payline-tag-${lineNum}`);
+        if (tag) tag.classList.add('active');
+
+        line.cells.forEach(idx => {
+            const c = document.getElementById(`slot-cell-${idx}`);
+            if (c) c.classList.add('payline-winner');
+        });
+
+        const ticker = document.getElementById('payline-ticker');
+        const text = document.getElementById('payline-ticker-text');
+        ticker.style.display = 'block';
+        text.innerText = `🔍 PREVIEW: ${line.name}`;
+
+        setTimeout(() => {
+            line.cells.forEach(idx => {
+                const c = document.getElementById(`slot-cell-${idx}`);
+                if (c && !isSpinning) c.classList.remove('payline-winner');
+            });
+            if (tag && !isSpinning) tag.classList.remove('active');
+            if (ticker && !isSpinning) ticker.style.display = 'none';
+        }, 1600);
+    }
+
+    // ─── Deposit Modal Handlers ──────────────────────────────────────────────────
     function openDepositModal() {
+        initAudio();
         const modal = document.getElementById('deposit-modal-backdrop');
         if (modal) {
             modal.classList.remove('hidden');
@@ -1018,27 +1620,25 @@
     }
 
     // ─── Utility ────────────────────────────────────────────────────────────────
-
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
     function setBet(amount) {
         if (isSpinning) return;
         document.getElementById('bet-input').value = amount;
+        document.getElementById('meter-bet').innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
     }
 
-    // ─── Spin Gratis: langsung spin tanpa mempedulikan taruhan ──────────────────
-
+    // ─── Spin Buttons ────────────────────────────────────────────────────────────
     async function executeFreeSpin() {
         if (isSpinning) return;
-        // Kirim bet_amount minimal (hanya sebagai referensi multiplier, tidak dipotong)
+        initAudio();
         const betAmount = parseFloat(document.getElementById('bet-input').value) || 1000;
         await spinCore(betAmount, true);
     }
 
-    // ─── Spin Regular: validasi saldo, potong bet ───────────────────────────────
-
     async function executeSpin() {
         if (isSpinning) return false;
+        initAudio();
 
         const betAmount = parseFloat(document.getElementById('bet-input').value);
         if (!betAmount || betAmount < 1000) { alert('Nominal taruhan minimal adalah Rp 1.000!'); return false; }
@@ -1052,10 +1652,13 @@
     }
 
     // ─── Core Spin Logic ────────────────────────────────────────────────────────
-
     async function spinCore(betAmount, isFreeSpin) {
         isSpinning = true;
         resetUI(isFreeSpin);
+
+        // Update Bet meter
+        document.getElementById('meter-bet').innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(betAmount);
+        document.getElementById('meter-win').innerText = 'Rp 0';
 
         // Phase 1: Start reel rolling
         const spinIntervals = startReelRolling(isFreeSpin);
@@ -1071,14 +1674,27 @@
             return false;
         }
 
-        // Phase 3: Wait minimum 2s of rolling animation
-        await sleep(2000);
+        // Phase 3: Wait minimum 1.8s of rolling animation
+        await sleep(1800);
         stopReelRolling(spinIntervals);
 
-        // Phase 4: Land symbols column by column
-        await landSymbols(data.grid);
+        // Phase 4: Land symbols column by column with Anticipation Suspense
+        await landSymbolsWithAnticipation(data.grid, data.near_miss);
 
-        // Phase 5: Post-land effects based on result
+        // Phase 5: Check winning paylines or near-miss
+        if (data.winning_lines && data.winning_lines.length > 0) {
+            // Animate win meter & highlight winning paylines
+            highlightWinningPaylines(data.winning_lines);
+            animateCountUp('meter-win', 0, data.win_amount, 800);
+            playWinSound(data.win_amount > betAmount * 5);
+        }
+
+        // Show near-miss banner if triggered
+        if (data.near_miss && data.near_miss_detail) {
+            showNearMissBanner(data.near_miss_detail);
+        }
+
+        // Phase 6: Post-land sequence
         if (data.status_manipulasi === 'lose' || data.status_manipulasi.includes('Rungkad')) {
             await playLoseSequence();
         } else if (data.status_manipulasi.includes('win') || data.status_manipulasi === 'win') {
@@ -1087,7 +1703,7 @@
             await playLowWinSequence(data);
         }
 
-        // Phase 6: Update balance & render result card
+        // Phase 7: Update balance & history log
         updateBalance(data.new_balance);
         renderResultCard(data);
         addHistoryRow(data);
@@ -1097,7 +1713,6 @@
     }
 
     // ─── API Call ────────────────────────────────────────────────────────────────
-
     function fetchSpin(betAmount, isFreeSpin = false) {
         return fetch("{{ route('api.spin') }}", {
             method: 'POST',
@@ -1114,29 +1729,30 @@
     }
 
     // ─── Phase 1: Rolling Animation ─────────────────────────────────────────────
-
     function startReelRolling(isFreeSpin = false) {
         const gameBadge = document.getElementById('game-status-badge');
         if (isFreeSpin) {
             gameBadge.innerText = '⚡ SPIN GRATIS AKTIF... ⚡';
             gameBadge.className = 'text-xs px-3 py-1 rounded-full font-bold bg-fuchsia-950 border border-fuchsia-400 text-fuchsia-200 animate-pulse';
         } else {
-            gameBadge.innerText = 'SPINNING...';
+            gameBadge.innerText = 'SPINNING REELS...';
             gameBadge.className = 'text-xs px-3 py-1 rounded-full font-bold bg-amber-900/80 border border-amber-500 text-amber-300 animate-pulse';
         }
 
         document.getElementById('result-card').classList.add('hidden');
+        document.getElementById('payline-ticker').style.display = 'none';
+        document.getElementById('near-miss-banner').style.display = 'none';
+        document.querySelectorAll('.payline-tag').forEach(t => t.classList.remove('active'));
         hideJackpotBanner();
 
         const intervals = [];
         for (let i = 0; i < 15; i++) {
             const cell = document.getElementById(`slot-cell-${i}`);
             cell.classList.add('spinning');
-            cell.classList.remove('matched', 'shattering', 'cascade-in', 'landing');
+            cell.classList.remove('matched', 'shattering', 'cascade-in', 'landing', 'anticipation', 'payline-winner');
 
             const col = i % 5;
-            // Stagger start per column
-            const delay = col * 60;
+            const delay = col * 50;
 
             let iv = null;
             setTimeout(() => {
@@ -1144,11 +1760,12 @@
                     const s = availableSymbols[Math.floor(Math.random() * availableSymbols.length)];
                     cell.querySelector('.symbol-icon').innerText = s;
                     cell.querySelector('.symbol-label').innerText = symbolLabels[s] || 'OLYMPUS';
-                }, 70 + col * 10);
+                    if (Math.random() < 0.15) playReelTick();
+                }, 65 + col * 10);
                 intervals.push(iv);
             }, delay);
 
-            intervals.push(null); // placeholder so length matches
+            intervals.push(null);
         }
         return intervals;
     }
@@ -1160,20 +1777,44 @@
         }
     }
 
-    // ─── Phase 4: Land Symbols Column by Column ──────────────────────────────────
-
-    async function landSymbols(grid) {
-        // Parse grid text → emoji+label
+    // ─── Phase 4: Land Symbols with Authentic Anticipation Tension ───────────────
+    async function landSymbolsWithAnticipation(grid, isNearMiss = false) {
         const parsed = grid.map(text => {
             if (text.includes('ZEUS'))      return { icon: '⚡', label: text };
             if (text.includes('MAHKOTA'))   return { icon: '👑', label: 'MAHKOTA' };
             if (text.includes('CINCIN'))    return { icon: '💍', label: 'CINCIN' };
             if (text.includes('JAM PASIR')) return { icon: '⏳', label: 'JAM PASIR' };
-            return { icon: text, label: symbolLabels[text] || 'OLYMPUS' };
+            if (text.includes('CAWAN'))     return { icon: '🍷', label: 'CAWAN' };
+            return { icon: text.split(' ')[0] || text, label: symbolLabels[text.split(' ')[0]] || 'OLYMPUS' };
         });
 
-        // Land column by column (5 cols), rows sequentially
+        let landedScatters = 0;
+
         for (let col = 0; col < 5; col++) {
+            // Check if we need Anticipation on Reel 4 & 5 (col 3 & 4)
+            if (col === 3 && landedScatters >= 2) {
+                // Suspense Anticipation Spin!
+                const gameBadge = document.getElementById('game-status-badge');
+                gameBadge.innerText = '⚡ ANTICIPATION: BUTUH 1 SCATTER LAGI! ⚡';
+                gameBadge.className = 'text-xs px-3 py-1 rounded-full font-bold bg-amber-500 text-gray-950 animate-bounce shadow-lg shadow-amber-500/50';
+
+                // Golden glow on reels 4 & 5
+                for (let r = 0; r < 3; r++) {
+                    document.getElementById(`slot-cell-${r * 5 + 3}`).classList.add('anticipation');
+                    document.getElementById(`slot-cell-${r * 5 + 4}`).classList.add('anticipation');
+                }
+
+                playAnticipationSound();
+                await sleep(1100);
+
+                for (let r = 0; r < 3; r++) {
+                    document.getElementById(`slot-cell-${r * 5 + 3}`).classList.remove('anticipation');
+                    document.getElementById(`slot-cell-${r * 5 + 4}`).classList.remove('anticipation');
+                }
+            }
+
+            // Land this column (3 rows)
+            let colHasScatter = false;
             for (let row = 0; row < 3; row++) {
                 const idx = row * 5 + col;
                 const cell = document.getElementById(`slot-cell-${idx}`);
@@ -1181,28 +1822,71 @@
                 cell.querySelector('.symbol-label').innerText = parsed[idx].label;
                 cell.classList.remove('spinning');
                 cell.classList.add('landing');
-                setTimeout(() => cell.classList.remove('landing'), 400);
+                setTimeout(() => cell.classList.remove('landing'), 350);
+
+                if (parsed[idx].icon === '⚡') {
+                    colHasScatter = true;
+                    landedScatters++;
+                }
             }
-            await sleep(90); // stagger between columns
+
+            playReelStopSound(colHasScatter);
+            await sleep(120);
         }
-        await sleep(300);
+        await sleep(250);
+    }
+
+    // ─── Winning Paylines Highlighting ──────────────────────────────────────────
+    function highlightWinningPaylines(winningLines) {
+        if (!winningLines || winningLines.length === 0) return;
+
+        const ticker = document.getElementById('payline-ticker');
+        const text = document.getElementById('payline-ticker-text');
+        ticker.style.display = 'block';
+
+        let lineMessages = [];
+
+        winningLines.forEach(wl => {
+            // Activate Payline side tag
+            const tag = document.getElementById(`payline-tag-${wl.line_number}`);
+            if (tag) tag.classList.add('active');
+
+            // Highlight matched cells
+            if (wl.indices) {
+                wl.indices.forEach(idx => {
+                    const c = document.getElementById(`slot-cell-${idx}`);
+                    if (c) c.classList.add('payline-winner');
+                });
+            }
+
+            lineMessages.push(`${wl.name}: ${wl.count}x ${wl.symbol} (+Rp ${new Intl.NumberFormat('id-ID').format(wl.win_amount)})`);
+        });
+
+        text.innerText = '🎉 ' + lineMessages.join(' | ');
+    }
+
+    function showNearMissBanner(detail) {
+        const banner = document.getElementById('near-miss-banner');
+        const text = document.getElementById('near-miss-text');
+        if (banner && text) {
+            text.innerText = detail;
+            banner.style.display = 'flex';
+        }
     }
 
     // ─── Phase 5a: Jackpot Sequence (WIN) ───────────────────────────────────────
-
     async function playJackpotSequence(data) {
         showJackpotBanner();
         triggerScreenFlash('zeus');
         triggerScreenShake();
+        playThunderSound();
 
-        // Step 1: Highlight all "winning" cells (ZEUS & MAHKOTA)
         const matchedIndices = [];
         for (let i = 0; i < 15; i++) {
             const icon = document.getElementById(`slot-cell-${i}`).querySelector('.symbol-icon').innerText;
-            if (icon === '⚡' || icon === '👑') matchedIndices.push(i);
+            if (icon === '⚡' || icon === '👑' || icon === '⏳') matchedIndices.push(i);
         }
         if (matchedIndices.length === 0) {
-            // Fallback: mark all as matched
             for (let i = 0; i < 15; i++) matchedIndices.push(i);
         }
 
@@ -1211,78 +1895,60 @@
             cell.classList.add('matched');
         });
 
-        // Step 2: Strike each matched cell with a lightning bolt
         for (let k = 0; k < matchedIndices.length; k++) {
-            await sleep(150);
+            await sleep(130);
             spawnLightningOnCell(matchedIndices[k]);
             spawnParticles(matchedIndices[k], ['⚡', '✨', '💫', '🌟', '⭐'], 8);
         }
 
-        await sleep(600);
+        await sleep(500);
 
-        // Step 3: Show multiplier popup on each matched cell
         matchedIndices.forEach(i => spawnMultiplierPopup(i, data.multiplier));
 
         await sleep(400);
 
-        // Step 4: Shatter matched symbols
         for (let k = 0; k < matchedIndices.length; k++) {
-            await sleep(60);
+            await sleep(50);
             shatterCell(matchedIndices[k]);
         }
-        await sleep(600);
+        await sleep(500);
 
-        // Step 5: Rain coins
-        rainCoins(20);
+        rainCoins(25);
 
-        // Step 6: Cascade new random symbols into shattered cells
         await sleep(300);
         await cascadeNewSymbols(matchedIndices);
 
-        // Step 7: Show jackpot win popup
         await sleep(400);
         showJackpotPopup(data);
     }
 
     // ─── Phase 5b: Low Win (Pancingan) ──────────────────────────────────────────
-
     async function playLowWinSequence(data) {
-        // Highlight JAM PASIR (⏳) cells
         const matchedIndices = [];
         for (let i = 0; i < 15; i++) {
-            const icon = document.getElementById(`slot-cell-${i}`).querySelector('.symbol-icon').innerText;
-            if (icon === '⏳') matchedIndices.push(i);
+            const cell = document.getElementById(`slot-cell-${i}`);
+            if (cell.classList.contains('payline-winner')) {
+                matchedIndices.push(i);
+            }
+        }
+        if (matchedIndices.length === 0) {
+            matchedIndices.push(5, 6, 7);
         }
 
-        matchedIndices.forEach(i => {
-            const cell = document.getElementById(`slot-cell-${i}`);
-            cell.classList.add('matched');
-            cell.style.borderColor = '#F59E0B';
-        });
-
         for (let k = 0; k < matchedIndices.length; k++) {
-            await sleep(120);
+            await sleep(100);
             spawnParticles(matchedIndices[k], ['✨', '💰', '🌟'], 5);
             spawnMultiplierPopup(matchedIndices[k], data.multiplier);
         }
 
-        await sleep(600);
-
-        matchedIndices.forEach(i => shatterCell(i));
         await sleep(500);
-        await cascadeNewSymbols(matchedIndices);
-
-        // Show low-win toast notification
-        await sleep(300);
         showLowWinToast(data);
     }
 
     // ─── Phase 5c: Lose (Rungkad) ───────────────────────────────────────────────
-
     async function playLoseSequence() {
         triggerScreenFlash('lose');
 
-        // Shake all cells briefly then quiver to death
         for (let i = 0; i < 15; i++) {
             const cell = document.getElementById(`slot-cell-${i}`);
             cell.style.animation = 'reelShake 0.08s 5 alternate';
@@ -1290,17 +1956,15 @@
         }
 
         await sleep(300);
-        spawnParticles(7, ['💀', '😭', '🔥', '💸'], 10);
-        await sleep(400);
+        spawnParticles(7, ['💀', '😭', '🔥', '💸'], 8);
+        await sleep(350);
     }
 
     // ─── WIN POPUP & TOAST ──────────────────────────────────────────────────────
-
     function showJackpotPopup(data) {
-        const modal   = document.getElementById('win-popup-modal');
+        const modal    = document.getElementById('win-popup-modal');
         const backdrop = document.getElementById('win-popup-backdrop');
 
-        // Configure modal to jackpot style
         modal.className = 'jackpot';
         document.getElementById('popup-zeus-icon').className = 'popup-zeus-icon';
         document.getElementById('popup-zeus-icon').innerText = '⚡';
@@ -1309,34 +1973,25 @@
         document.getElementById('popup-manipulation-label').innerText = data.status_label;
         document.getElementById('popup-close-btn').querySelector('span').innerText = 'TUTUP & PUTAR LAGI';
 
-        // Stats row
         document.getElementById('popup-stat-bet').innerText     = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.bet_amount);
         document.getElementById('popup-stat-payout').innerText  = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.win_amount);
         document.getElementById('popup-stat-balance').innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.new_balance);
 
-        // Animated counter-up for win amount
         animateCountUp('popup-win-amount', 0, data.win_amount, 1200);
 
-        // Open backdrop
         backdrop.classList.add('open');
-
-        // Confetti burst
         launchPopupConfetti(30);
     }
 
     function showLowWinToast(data) {
         const toast = document.getElementById('small-win-toast');
-        document.getElementById('toast-icon').innerText       = '⏳';
+        document.getElementById('toast-icon').innerText       = '💎';
         document.getElementById('toast-amount').innerText     = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.win_amount);
         document.getElementById('toast-multiplier').innerText = `x${data.multiplier} Perkalian`;
         document.getElementById('toast-subtitle').innerText   = 'MENANG KECIL — PANCINGAN BANDAR';
 
         toast.classList.add('show');
-
-        // Auto-dismiss after 4 seconds
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 4000);
+        setTimeout(() => { toast.classList.remove('show'); }, 4000);
     }
 
     function closeWinPopup() {
@@ -1359,13 +2014,13 @@
 
     function animateCountUp(elementId, from, to, durationMs) {
         const el    = document.getElementById(elementId);
+        if (!el) return;
         const start = performance.now();
         const fmt   = v => 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(v));
 
         function step(now) {
             const elapsed  = now - start;
             const progress = Math.min(elapsed / durationMs, 1);
-            // Ease-out cubic
             const eased = 1 - Math.pow(1 - progress, 3);
             el.innerText = fmt(from + (to - from) * eased);
             if (progress < 1) requestAnimationFrame(step);
@@ -1391,11 +2046,10 @@
     }
 
     // ─── Animation Helpers ───────────────────────────────────────────────────────
-
     function triggerScreenFlash(type) {
         const overlay = document.getElementById('zeus-flash-overlay');
         overlay.className = '';
-        void overlay.offsetWidth; // reflow
+        void overlay.offsetWidth;
         overlay.className = type === 'lose' ? 'lose-flash' : 'active';
     }
 
@@ -1468,7 +2122,6 @@
 
     function shatterCell(idx) {
         const cell = document.getElementById(`slot-cell-${idx}`);
-        // Spawn 6 shard emoji flying off
         const icon = cell.querySelector('.symbol-icon').innerText;
         spawnParticles(idx, [icon, '💥', '✨'], 6);
 
@@ -1477,7 +2130,7 @@
         setTimeout(() => {
             cell.classList.remove('shattering');
             cell.style.opacity = '0';
-            cell.querySelector('.symbol-icon').innerText = '　'; // blank
+            cell.querySelector('.symbol-icon').innerText = '　';
             cell.querySelector('.symbol-label').innerText = '';
         }, 450);
     }
@@ -1514,7 +2167,6 @@
     }
 
     // ─── UI State Helpers ────────────────────────────────────────────────────────
-
     function resetUI(isFreeSpin = false) {
         const spinBtn  = document.getElementById('spin-btn');
         const spinIcon = document.getElementById('spin-icon');
@@ -1523,7 +2175,6 @@
         const freeText = document.getElementById('free-spin-text');
 
         if (isFreeSpin) {
-            // Saat spin gratis: nonaktifkan tombol SPIN GRATIS
             if (freeBtn) {
                 freeBtn.disabled = true;
                 freeBtn.classList.add('opacity-75', 'cursor-not-allowed');
@@ -1535,7 +2186,6 @@
                 spinIcon.classList.add('fa-spin');
             }
         } else {
-            // Saat spin reguler
             if (spinBtn) {
                 spinBtn.disabled = true;
                 spinBtn.classList.add('opacity-75', 'cursor-not-allowed');
@@ -1548,10 +2198,9 @@
             }
         }
 
-        // Clear matched states
         for (let i = 0; i < 15; i++) {
             const c = document.getElementById(`slot-cell-${i}`);
-            c.classList.remove('matched', 'shattering', 'cascade-in', 'landing');
+            c.classList.remove('matched', 'shattering', 'cascade-in', 'landing', 'payline-winner', 'anticipation');
             c.style.opacity = '1';
             c.style.animation = '';
             c.style.borderColor = '';
@@ -1591,12 +2240,12 @@
         currentBalance = parseFloat(newBalance);
         const fmt = 'Rp ' + new Intl.NumberFormat('id-ID').format(currentBalance);
         document.getElementById('player-balance').innerText = fmt;
+        document.getElementById('meter-balance').innerText  = fmt;
         const nav = document.getElementById('nav-user-balance');
         if (nav) nav.innerText = fmt;
     }
 
     // ─── Result Card ─────────────────────────────────────────────────────────────
-
     function renderResultCard(data) {
         const card        = document.getElementById('result-card');
         const iconBg      = document.getElementById('result-icon-bg');
@@ -1639,7 +2288,6 @@
     }
 
     // ─── History Row ─────────────────────────────────────────────────────────────
-
     function addHistoryRow(data) {
         const tbody   = document.getElementById('player-history-body');
         const emptyRow = document.getElementById('empty-history-row');
