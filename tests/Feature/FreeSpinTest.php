@@ -69,12 +69,12 @@ class FreeSpinTest extends TestCase
         $this->assertEquals(10000, (float) $player->fresh()->balance);
     }
 
-    /** Spin Gratis saat menang tidak memotong saldo, tapi menambah kemenangan */
-    public function test_free_spin_win_adds_balance_without_deduction(): void
+    /** Spin Gratis mengabaikan kemenangan: saldo tetap utuh dan win_amount = 0 */
+    public function test_free_spin_ignores_win_and_keeps_balance(): void
     {
         $player = $this->makePlayer(['balance' => 10000]);
 
-        // Atur ke mode menang
+        // Atur ke mode menang di manipulasi bandar
         $player->gameSetting()->update(['next_spin_result' => 'win']);
 
         $response = $this->actingAs($player)->postJson('/api/spin', [
@@ -87,10 +87,12 @@ class FreeSpinTest extends TestCase
             'success'            => true,
             'is_free_spin'       => true,
             'effective_bet_cost' => 0,
+            'win_amount'         => 0,
+            'multiplier'         => 0,
         ]);
 
-        // Saldo tidak boleh berkurang (bet cost = 0), bisa tetap atau bertambah
-        $this->assertGreaterThanOrEqual(10000, (float) $player->fresh()->balance);
+        // Saldo tetap utuh Rp 10.000 karena kemenangan diabaikan dan tidak ada taruhan
+        $this->assertEquals(10000, (float) $player->fresh()->balance);
     }
 
     /** Spin Gratis dapat dilakukan berkali-kali (tidak ada batas kuota) */

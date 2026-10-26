@@ -92,9 +92,36 @@ class GameController extends Controller
             'bet_amount' => ['required', 'numeric', 'min:1000'],
         ]);
 
+        $betAmount = (float) $request->bet_amount;
+
+        $grid = [];
+        $multiplier = 0.0;
+        $winAmount = 0.0;
+        $statusLabel = '';
+        $message = '';
+        $winningLines = [];
+        $nearMiss = false;
+        $nearMissDetail = null;
+
         if ($isFreeSpin) {
-            // Spin Gratis: pakai nominal bet sebagai dasar multiplier, tapi saldo tidak dipotong
+            // === MODE SPIN GRATIS: ABAIKAN KEMENANGAN & TARUHAN ===
+            // Spin gratis murni simulasi acak: saldo tidak dipotong, kemenangan diabaikan (win = 0, multiplier = 0),
+            // dan tidak ada payline kemenangan yang diaktifkan.
             $effectiveBetCost = 0.0;
+            $multiplier = 0.0;
+            $winAmount = 0.0;
+            $winningLines = [];
+            $nearMiss = false;
+            $nearMissDetail = null;
+            $manipulationSetting = 'free_spin';
+            $statusLabel = '[SPIN GRATIS] Simulasi Acak (Kemenangan Diabaikan)';
+            $message = 'Mode Spin Gratis: Putaran simulasi acak tanpa taruhan dan kemenangan diabaikan.';
+
+            // Acak 15 simbol visual murni untuk simulasi
+            $pool = ['💎 PERMATA', '💚 GIOK', '💙 SAFIR', '🍷 CAWAN', '💍 CINCIN', '⏳ JAM PASIR', '👑 MAHKOTA', '⚡ ZEUS'];
+            for ($i = 0; $i < 15; $i++) {
+                $grid[] = $pool[array_rand($pool)];
+            }
         } else {
             $effectiveBetCost = (float) $request->bet_amount;
 
@@ -105,114 +132,43 @@ class GameController extends Controller
                     'message' => 'Saldo virtual Anda tidak mencukupi untuk melakukan bet ini!',
                 ], 400);
             }
-        }
 
-        $betAmount = (float) $request->bet_amount;
+            // 2. CEK SETTING MANIPULASI DARI ADMIN (BANDAR)
+            $setting = GameSetting::firstOrCreate(
+                ['user_id' => $user->id],
+                ['next_spin_result' => 'lose'] // Default sistem: Siswa dibuat KKN / Rungkad
+            );
 
-        // 2. CEK SETTING MANIPULASI DARI ADMIN (BANDAR)
-        $setting = GameSetting::firstOrCreate(
-            ['user_id' => $user->id],
-            ['next_spin_result' => 'lose'] // Default sistem: Siswa dibuat KKN / Rungkad
-        );
+            $manipulationSetting = $setting->next_spin_result;
 
-        $manipulationSetting = $setting->next_spin_result;
+            // 3. DIKTE HASIL PUTARAN BERDASARKAN KEPUTUSAN BANDAR
+            if ($manipulationSetting === 'lose') {
+                // === MODUS 1: PASTI RUNGKAD / KALAH (ZONK) DENGAN PSIKOLOGI NEAR-MISS ===
+                // Bandar membuat grid visual TANPA kombinasi menang di 10 payline,
+                // tetapi sengaja memasang 2 scatter petir / 2 mahkota berurutan untuk sensasi 'hampir menang'
+                $gridData = $this->generateLosingGridWithNearMiss();
+                $grid = $gridData['grid'];
+                $nearMiss = $gridData['near_miss'];
+                $nearMissDetail = $gridData['near_miss_detail'];
+                $multiplier = 0.0;
+                $winAmount = 0.0;
+                $statusLabel = 'Pasti Rungkad / Zonk (Dikontrol Backend Bandar)';
+                $message = 'AKUN ANDA SEDANG DI-SETTING RUNGKAD OLEH BANDAR! ' . ($nearMiss ? 'Perhatikan bagaimana bandar memberi 2 scatter (hampir menang) untuk memancing Anda terus bermain!' : 'Saldo bet Anda lunas diambil sistem.');
 
-        // Hitung Pendapatan Admin & Batas Maksimal Kemenangan Pemain (Max 60% dari Total Pendapatan Admin)
-        $totalAdminIncome = (float) SpinLog::sum('bet_amount') + $effectiveBetCost;
-        $totalPlayerPayouts = (float) SpinLog::sum('result_amount');
-        $maxPayoutAllowedTotal = 0.60 * $totalAdminIncome;
-        $maxWinAllowedThisSpin = max(0.0, $maxPayoutAllowedTotal - $totalPlayerPayouts);
-
-        // 3. DIKTE HASIL PUTARAN BERDASARKAN KEPUTUSAN BANDAR & BATAS 60% REVENUE
-        $grid = [];
-        $multiplier = 0.0;
-        $winAmount = 0.0;
-        $statusLabel = '';
-        $message = '';
-        $winningLines = [];
-        $nearMiss = false;
-        $nearMissDetail = null;
-
-        if ($manipulationSetting === 'lose') {
-            // === MODUS 1: PASTI RUNGKAD / KALAH (ZONK) DENGAN PSIKOLOGI NEAR-MISS ===
-            // Bandar membuat grid visual TANPA kombinasi menang di 10 payline,
-            // tetapi sengaja memasang 2 scatter petir / 2 mahkota berurutan untuk sensasi 'hampir menang'
-            $gridData = $this->generateLosingGridWithNearMiss();
-            $grid = $gridData['grid'];
-            $nearMiss = $gridData['near_miss'];
-            $nearMissDetail = $gridData['near_miss_detail'];
-            $multiplier = 0.0;
-            $winAmount = 0.0;
-            $statusLabel = 'Pasti Rungkad / Zonk (Dikontrol Backend Bandar)';
-            $message = $isFreeSpin 
-                ? 'PUTARAN GRATIS ZONK! Bahkan di sesi spin gratis pun, bandar tetap mengontrol hasil menjadi rungkad.'
-                : 'AKUN ANDA SEDANG DI-SETTING RUNGKAD OLEH BANDAR! ' . ($nearMiss ? 'Perhatikan bagaimana bandar memberi 2 scatter (hampir menang) untuk memancing Anda terus bermain!' : 'Saldo bet Anda lunas diambil sistem.');
-
-        } elseif ($manipulationSetting === 'win') {
-            // === MODUS 2: PASTI MENANG JACKPOT (KOMBINASI PAYLINE + PERKALIAN ZEUS) ===
-            $proposedMultiplier = (float) rand(50, 500); // Perkalian jackpot 50x - 500x
-            $proposedWinAmount = $betAmount * $proposedMultiplier;
-
-            if ($proposedWinAmount > $maxWinAllowedThisSpin) {
-                $maxPossibleMultiplier = (float) floor($maxWinAllowedThisSpin / $betAmount);
-                if ($maxPossibleMultiplier < 1.0) {
-                    // Jika memberikan kemenangan 1x saja sudah melebihi 60% total pendapatan admin, paksa Rungkad
-                    $gridData = $this->generateLosingGridWithNearMiss();
-                    $grid = $gridData['grid'];
-                    $nearMiss = $gridData['near_miss'];
-                    $nearMissDetail = $gridData['near_miss_detail'];
-                    $multiplier = 0.0;
-                    $winAmount = 0.0;
-                    $statusLabel = 'Dibatasi Admin Profit Guard (Max 60% Revenue)';
-                    $message = 'Sistem membatasi kemenangan! Total payout pemain telah mencapai batas 60% dari total pendapatan admin.';
-                } else {
-                    // Capped ke batas multiplier tertinggi yang diperbolehkan
-                    $multiplier = min($proposedMultiplier, $maxPossibleMultiplier);
-                    $winAmount = $betAmount * $multiplier;
-                    $gridData = $this->generateJackpotGrid($multiplier, $betAmount);
-                    $grid = $gridData['grid'];
-                    $winningLines = $gridData['winning_lines'];
-                    $statusLabel = 'Pasti Menang Jackpot (Dibatasi 60% Revenue Admin)';
-                    $message = "SELAMAT! Anda mendapatkan Jackpot x{$multiplier}! (Dibatasi max 60% total pendapatan admin)";
-                }
-            } else {
-                $multiplier = $proposedMultiplier;
-                $winAmount = $proposedWinAmount;
+            } elseif ($manipulationSetting === 'win') {
+                // === MODUS 2: PASTI MENANG JACKPOT (KOMBINASI PAYLINE + PERKALIAN ZEUS) ===
+                $multiplier = (float) rand(50, 500); // Perkalian jackpot 50x - 500x
+                $winAmount = $betAmount * $multiplier;
                 $gridData = $this->generateJackpotGrid($multiplier, $betAmount);
                 $grid = $gridData['grid'];
                 $winningLines = $gridData['winning_lines'];
                 $statusLabel = 'Pasti Menang Jackpot (Dikontrol Backend Bandar)';
                 $message = "SELAMAT! Anda mendapatkan Jackpot x{$multiplier}! (Hasil manipulasi Admin)";
-            }
 
-        } elseif ($manipulationSetting === 'random_low_win') {
-            // === MODUS 3: PANCINGAN / MENANG KECIL (1-2 PAYLINE RENDAH) ===
-            $proposedMultiplier = (float) (rand(120, 250) / 100); // 1.2x - 2.5x
-            $proposedWinAmount = $betAmount * $proposedMultiplier;
-
-            if ($proposedWinAmount > $maxWinAllowedThisSpin) {
-                $maxPossibleMultiplier = (float) ($maxWinAllowedThisSpin / $betAmount);
-                if ($maxPossibleMultiplier < 1.0) {
-                    $gridData = $this->generateLosingGridWithNearMiss();
-                    $grid = $gridData['grid'];
-                    $nearMiss = $gridData['near_miss'];
-                    $nearMissDetail = $gridData['near_miss_detail'];
-                    $multiplier = 0.0;
-                    $winAmount = 0.0;
-                    $statusLabel = 'Dibatasi Admin Profit Guard (Max 60% Revenue)';
-                    $message = 'Kemenangan pancingan dibatasi karena total payout pemain telah mencapai 60% pendapatan admin!';
-                } else {
-                    $multiplier = round($maxPossibleMultiplier, 2);
-                    $winAmount = $betAmount * $multiplier;
-                    $gridData = $this->generateLowWinGridWithPaylines($multiplier, $betAmount);
-                    $grid = $gridData['grid'];
-                    $winningLines = $gridData['winning_lines'];
-                    $statusLabel = 'Menang Kecil / Pancingan (Dibatasi 60% Revenue)';
-                    $message = "Anda Menang Kecil x{$multiplier} (Dibatasi max 60% total pendapatan admin).";
-                }
-            } else {
-                $multiplier = $proposedMultiplier;
-                $winAmount = $proposedWinAmount;
+            } elseif ($manipulationSetting === 'random_low_win') {
+                // === MODUS 3: PANCINGAN / MENANG KECIL (1-2 PAYLINE RENDAH) ===
+                $multiplier = (float) (rand(120, 250) / 100); // 1.2x - 2.5x
+                $winAmount = $betAmount * $multiplier;
                 $gridData = $this->generateLowWinGridWithPaylines($multiplier, $betAmount);
                 $grid = $gridData['grid'];
                 $winningLines = $gridData['winning_lines'];
@@ -224,10 +180,6 @@ class GameController extends Controller
         // 4. KELOLA SALDO SISWA (PEMOTONGAN BET JIKA BUKAN FREE SPIN & PENAMBAHAN KEMENANGAN)
         $user->balance = $user->balance - $effectiveBetCost + $winAmount;
         $user->save();
-
-        if ($isFreeSpin) {
-            $statusLabel = '[SPIN GRATIS] ' . $statusLabel;
-        }
 
         // 5. CATAT LOG AUDIT MANIPULASI
         SpinLog::create([

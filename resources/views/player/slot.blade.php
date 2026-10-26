@@ -1657,7 +1657,7 @@
         resetUI(isFreeSpin);
 
         // Update Bet meter
-        document.getElementById('meter-bet').innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(betAmount);
+        document.getElementById('meter-bet').innerText = isFreeSpin ? 'Rp 0 (GRATIS)' : ('Rp ' + new Intl.NumberFormat('id-ID').format(betAmount));
         document.getElementById('meter-win').innerText = 'Rp 0';
 
         // Phase 1: Start reel rolling
@@ -1678,24 +1678,27 @@
         await sleep(1800);
         stopReelRolling(spinIntervals);
 
-        // Phase 4: Land symbols column by column with Anticipation Suspense
-        await landSymbolsWithAnticipation(data.grid, data.near_miss);
+        // Phase 4: Land symbols column by column with Anticipation Suspense (bypass suspense on free spin)
+        await landSymbolsWithAnticipation(data.grid, data.near_miss, isFreeSpin);
 
-        // Phase 5: Check winning paylines or near-miss
-        if (data.winning_lines && data.winning_lines.length > 0) {
+        // Phase 5: Check winning paylines or near-miss (HANYA jika bukan spin gratis)
+        if (!isFreeSpin && data.winning_lines && data.winning_lines.length > 0) {
             // Animate win meter & highlight winning paylines
             highlightWinningPaylines(data.winning_lines);
             animateCountUp('meter-win', 0, data.win_amount, 800);
             playWinSound(data.win_amount > betAmount * 5);
         }
 
-        // Show near-miss banner if triggered
-        if (data.near_miss && data.near_miss_detail) {
+        // Show near-miss banner if triggered (hanya saat bukan free spin)
+        if (!isFreeSpin && data.near_miss && data.near_miss_detail) {
             showNearMissBanner(data.near_miss_detail);
         }
 
-        // Phase 6: Post-land sequence
-        if (data.status_manipulasi === 'lose' || data.status_manipulasi.includes('Rungkad')) {
+        // Phase 6: Post-land sequence (Abaikan animasi kemenangan dan animasi kekalahan pada spin gratis)
+        if (isFreeSpin) {
+            // Spin Gratis: Langsung selesai tanpa animasi kemenangan / kekalahan
+            await sleep(300);
+        } else if (data.status_manipulasi === 'lose' || data.status_manipulasi.includes('Rungkad')) {
             await playLoseSequence();
         } else if (data.status_manipulasi.includes('win') || data.status_manipulasi === 'win') {
             await playJackpotSequence(data);
@@ -1778,7 +1781,7 @@
     }
 
     // ─── Phase 4: Land Symbols with Authentic Anticipation Tension ───────────────
-    async function landSymbolsWithAnticipation(grid, isNearMiss = false) {
+    async function landSymbolsWithAnticipation(grid, isNearMiss = false, isFreeSpin = false) {
         const parsed = grid.map(text => {
             if (text.includes('ZEUS'))      return { icon: '⚡', label: text };
             if (text.includes('MAHKOTA'))   return { icon: '👑', label: 'MAHKOTA' };
@@ -1791,8 +1794,8 @@
         let landedScatters = 0;
 
         for (let col = 0; col < 5; col++) {
-            // Check if we need Anticipation on Reel 4 & 5 (col 3 & 4)
-            if (col === 3 && landedScatters >= 2) {
+            // Check if we need Anticipation on Reel 4 & 5 (col 3 & 4) — Lewati pada spin gratis
+            if (!isFreeSpin && col === 3 && landedScatters >= 2) {
                 // Suspense Anticipation Spin!
                 const gameBadge = document.getElementById('game-status-badge');
                 gameBadge.innerText = '⚡ ANTICIPATION: BUTUH 1 SCATTER LAGI! ⚡';
@@ -1830,7 +1833,7 @@
                 }
             }
 
-            playReelStopSound(colHasScatter);
+            playReelStopSound(isFreeSpin ? false : colHasScatter);
             await sleep(120);
         }
         await sleep(250);
@@ -2263,27 +2266,38 @@
         statusLabel.innerText = data.status_label;
         message.innerText     = data.message;
 
-        if (data.status_manipulasi === 'lose' || data.status_manipulasi.includes('Rungkad')) {
+        if (data.is_free_spin) {
+            card.className   = 'glass-card rounded-2xl p-6 border border-purple-500/50 bg-purple-950/40 shadow-2xl';
+            iconBg.className = 'w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 bg-purple-900/80 text-purple-300 border border-purple-500/40';
+            icon.className   = 'fa-solid fa-gift text-purple-300';
+            title.className  = 'font-display font-black text-xl text-purple-300';
+            title.innerText  = 'SPIN GRATIS (SIMULASI ACAK)';
+            badge.className  = 'px-3 py-1 rounded-full text-xs font-bold uppercase bg-purple-950 text-purple-300 border border-purple-500/50';
+            badge.innerText  = 'SPIN GRATIS';
+        } else if (data.status_manipulasi === 'lose' || data.status_manipulasi.includes('Rungkad')) {
             card.className   = 'glass-card rounded-2xl p-6 border border-red-500/50 bg-red-950/40 shadow-2xl';
             iconBg.className = 'w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 bg-red-900/80 text-red-300 border border-red-500/40';
             icon.className   = 'fa-solid fa-skull-crossbones';
             title.className  = 'font-display font-black text-xl text-red-400';
-            title.innerText  = data.is_free_spin ? 'SPIN GRATIS ZONK! (DI-SETTING BANDAR)' : 'RUNGKAD! (HASIL DI-SETTING BANDAR)';
+            title.innerText  = 'RUNGKAD! (HASIL DI-SETTING BANDAR)';
             badge.className  = 'px-3 py-1 rounded-full text-xs font-bold uppercase bg-red-950 text-red-300 border border-red-500/50';
+            badge.innerText  = 'ZONK / KALAH';
         } else if (data.status_manipulasi === 'win' || data.status_manipulasi.includes('win')) {
             card.className   = 'glass-card rounded-2xl p-6 border border-emerald-500/50 bg-emerald-950/40 shadow-2xl zeus-lightning';
             iconBg.className = 'w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 bg-emerald-900/80 text-emerald-300 border border-emerald-500/40';
             icon.className   = 'fa-solid fa-bolt-lightning text-amber-400';
             title.className  = 'font-display font-black text-xl text-emerald-400';
-            title.innerText  = data.is_free_spin ? '⚡ JACKPOT SPIN GRATIS! ⚡' : 'JACKPOT! (HASIL DI-SETTING BANDAR)';
+            title.innerText  = 'JACKPOT! (HASIL DI-SETTING BANDAR)';
             badge.className  = 'px-3 py-1 rounded-full text-xs font-bold uppercase bg-emerald-950 text-emerald-300 border border-emerald-500/50';
+            badge.innerText  = 'MENANG BESAR';
         } else {
             card.className   = 'glass-card rounded-2xl p-6 border border-amber-500/50 bg-amber-950/40 shadow-2xl';
             iconBg.className = 'w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 bg-amber-900/80 text-amber-300 border border-amber-500/40';
             icon.className   = 'fa-solid fa-fish';
             title.className  = 'font-display font-black text-xl text-amber-400';
-            title.innerText  = data.is_free_spin ? 'MENANG KECIL (SPIN GRATIS)' : 'MENANG KECIL (PANCINGAN BANDAR)';
+            title.innerText  = 'MENANG KECIL (PANCINGAN BANDAR)';
             badge.className  = 'px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-950 text-amber-300 border border-amber-500/50';
+            badge.innerText  = 'PANCINGAN';
         }
     }
 
@@ -2295,8 +2309,8 @@
 
         const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const isRungkad = data.status_manipulasi === 'lose' || data.status_manipulasi.includes('Rungkad');
-        const badgeClass  = isRungkad ? 'bg-red-950 text-red-300' : 'bg-emerald-950 text-emerald-300';
-        const payoutClass = data.win_amount > 0 ? 'text-emerald-400' : 'text-red-400';
+        const badgeClass  = data.is_free_spin ? 'bg-purple-950 text-purple-300 border border-purple-500/40' : (isRungkad ? 'bg-red-950 text-red-300' : 'bg-emerald-950 text-emerald-300');
+        const payoutClass = data.is_free_spin ? 'text-gray-400' : (data.win_amount > 0 ? 'text-emerald-400' : 'text-red-400');
 
         const betDisplay = data.is_free_spin 
             ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 border border-purple-500/50 text-purple-300"><i class="fa-solid fa-gift text-[9px] text-amber-300"></i> GRATIS (Rp 0)</span>'

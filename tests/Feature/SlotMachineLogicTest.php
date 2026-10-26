@@ -23,17 +23,6 @@ class SlotMachineLogicTest extends TestCase
             'next_spin_result' => $setting,
         ]);
 
-        // Seed deposit/spin log sebelumnya agar ada revenue admin untuk guard 60% payout
-        \App\Models\SpinLog::create([
-            'user_id'           => $player->id,
-            'bet_amount'        => 500000,
-            'result_amount'     => 0,
-            'status_manipulasi' => 'Pasti Rungkad / Zonk',
-            'multiplier'        => 0,
-            'is_free_spin'      => false,
-            'grid_pattern'      => ['💎', '💎', '💎'],
-        ]);
-
         return $player;
     }
 

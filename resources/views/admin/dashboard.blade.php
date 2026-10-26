@@ -78,9 +78,8 @@
 
         <div class="glass-card p-4 rounded-xl border border-emerald-500/30 flex items-center justify-between">
             <div>
-                <p class="text-[11px] text-emerald-300/80 font-semibold uppercase tracking-wider">Net Profit Admin</p>
                 <p id="stat-net-profit" class="font-display font-black text-xl text-emerald-400 mt-0.5">Rp {{ number_format($netProfit, 0, ',', '.') }}</p>
-                <p class="text-[10px] text-indigo-300 mt-0.5">Payout Ratio: <span id="stat-payout-ratio" class="font-bold text-amber-300">{{ $payoutRatio }}%</span> (Max 60%)</p>
+                <p class="text-[10px] text-indigo-300 mt-0.5">Payout Ratio: <span id="stat-payout-ratio" class="font-bold text-amber-300">{{ $payoutRatio }}%</span></p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg">
                 <i class="fa-solid fa-vault"></i>
@@ -333,10 +332,13 @@
         <div class="bg-gray-950 border border-purple-900/80 p-4 rounded-xl font-mono text-xs text-purple-200 overflow-x-auto leading-relaxed">
             <pre><code>// Potongan dari app/Http/Controllers/GameController.php
 
-// Batas 60% Revenue Payout System Guard
-$maxPayoutAllowedTotal = 0.60 * ($totalAdminIncome + $betAmount);
-if ($proposedWinAmount > $maxWinAllowedThisSpin) {
-    // Kemenangan dibatasi / dipaksa Rungkad jika melebihi 60% total pendapatan admin!
+// Hasil putaran diatur 100% langsung oleh Admin di server:
+if ($manipulationSetting === 'lose') {
+    // Mode Rungkad: 0% kemenangan, manipulasi Near-Miss psikologis
+} elseif ($manipulationSetting === 'win') {
+    // Mode Jackpot: Dipaksa menang 50x - 500x sesuai kehendak bandar
+} elseif ($manipulationSetting === 'random_low_win') {
+    // Mode Pancingan: Menang kecil 1.2x - 2.5x agar pemain tergiur lanjut main
 }</code></pre>
         </div>
     </div>
